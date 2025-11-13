@@ -16,8 +16,24 @@
 - ### logging for sensitive operations
 
 ## Handling Failure
-- ## circuit breakers
-- ## retry logic
+- ### circuit breakers
+- ### retry logic
+
+## Service Inventory
+
+| Service | Port | Language/Framework | Database | Description |
+|---------|------|-------------------|----------|-------------|
+| API Gateway | 8080 | java/Spring Cloud Gateway | - | Entry point, routing, JWT validation |
+| Auth Service | 8081 | java/Spring Boot | PostgreSQL | User authentication, JWT generation |
+| User Service | 8082 | java/Spring Boot | PostgreSQL | User profiles, RBAC |
+| Resource Service | 8083 | java/Spring Boot | PostgreSQL | Resource catalog, availability |
+| Booking Service | 8084 | java/Spring Boot | PostgreSQL | Reservations, overbooking prevention |
+| Marketplace Service | 8085 | java/Spring Boot | PostgreSQL | Products, orders, Saga orchestration |
+| Exam Service | 8087 | java/Spring Boot | PostgreSQL | Exams, submissions, Circuit Breaker |
+| Notification Service | 8088 | java/Spring Boot | PostgreSQL | Email/SMS, Observer pattern |
+| IoT Service | 8089 | java/Spring Boot | - | Sensor data processing |
+| Tracking Service | 8090 | java/Spring Boot | PostgreSQL | Shuttle GPS tracking |
+
 -------------------------------------------------------------------------------------
 ## Level 2 C4 diagram
 ```mermaid
@@ -78,6 +94,7 @@ flowchart TB
 
 
 ````
+
 
 
 
