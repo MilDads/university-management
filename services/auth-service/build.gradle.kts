@@ -15,8 +15,9 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
+
 application {
-    mainClass.set("io.github.bardiakz.Main")
+    mainClass = "io.github.bardiakz.Main"
 }
 
 tasks.test {
