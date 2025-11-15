@@ -1,23 +1,23 @@
 # University-Management Architecture
 
 ## Multi-Tenancy
-- ### PostgreSQL: Schema-per-tenant (database level isolation)
+-  PostgreSQL: Schema-per-tenant (database level isolation)
 
 ## Communications:
-- ### API gateway (single entry point)
-- ### synchronous: API gateway --> gRPC (internal)
-- ### ssynchronous: RabbitMQ
-- ### caching: Redis
+-  API gateway (single entry point)
+-  synchronous: API gateway --> gRPC (internal)
+-  ssynchronous: RabbitMQ
+-  caching: Redis
 
 ## Authentication and Security
-- ### auth-service --> JWT token
-- ### JWT validation per service
-- ### RBAC check per operation
-- ### logging for sensitive operations
+- JWT authentication --> auth-service
+- JWT validation --> API gateway (per request)
+-  RBAC check per operation
+-  logging for sensitive operations
 
 ## Handling Failure
-- ### circuit breakers
-- ### retry logic
+-  circuit breakers
+-  retry logic
 
 ## Service Inventory
 
@@ -94,6 +94,7 @@ flowchart TB
 
 
 ````
+
 
 
 
