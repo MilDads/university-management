@@ -16,13 +16,12 @@ import java.util.function.Function;
 
 @Service
 public class JwtService {
-    private final String secret;
     private final SecretKey signingKey;
     private final Long expiration;
 
     public JwtService() {
         Dotenv dotenv = Dotenv.configure().load();
-        this.secret = dotenv.get("JWT_SECRET");
+        String secret = dotenv.get("JWT_SECRET");
 
         if (secret == null || secret.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalArgumentException("JWT secret must be at least 256 bits");
@@ -44,14 +43,6 @@ public class JwtService {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
     }
-
-//    public Claims getClaims(String token) {
-//        return Jwts.parser()
-//                .verifyWith(getSigningKey())
-//                .build()
-//                .parseSignedClaims(token)
-//                .getPayload();
-//    }
 
     private Claims extractAllClaims(String token) {
         try {
