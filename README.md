@@ -38,7 +38,7 @@ A loosely coupled, event-driven microservices architecture implementing Saga pat
 | Marketplace Service | 8085 | Java 25 / Spring Boot | PostgreSQL (5436) | Products, orders, **Saga Orchestrator** |
 | Payment Service | 8086 | Java 25 / Spring Boot | PostgreSQL (5437) | Payment processing, Saga participant |
 | Exam Service | 8087 | Java 25 / Spring Boot | PostgreSQL (5438) | Exams, submissions, Circuit Breaker |
-| Notification Service | 8088 | Java 25 / Spring Boot | PostgreSQL (5439) | Email/SMS, Observer pattern |
+| Notification Service | 8088 | Java 25 / Spring Boot | PostgreSQL (5439) | Email, Observer pattern |
 | IoT Service | 8089 | Java 25 / Spring Boot | TimescaleDB (5441) | Sensor data, time-series analytics |
 | Tracking Service | 8090 | Java 25 / Spring Boot | PostgreSQL (5440) | Shuttle GPS tracking |
 
@@ -71,7 +71,7 @@ flowchart TB
         ExamService["📝 Exam Service<br>Port 8087<br><br>Exams & Submissions<br>CIRCUIT BREAKER"]
   end
  subgraph SupportServices["Support Microservices"]
-        NotificationService["📬 Notification Service<br>Port 8088<br><br>Email & SMS<br>Observer Pattern"]
+        NotificationService["📬 Notification Service<br>Port 8088<br><br>Email<br>Observer Pattern"]
         IoTService["🌡️ IoT Service<br>Port 8089<br><br>Sensor data processing<br>Time-series analytics"]
         TrackingService["🚌 Tracking Service<br>Port 8090<br><br>Shuttle GPS tracking<br>Real-time location"]
   end
@@ -201,7 +201,7 @@ flowchart TB
             Marketplace["🛒 Marketplace<br/><br/>Products & Orders<br/>Saga Orchestrator"]
             Payment["💰 Payment Service<br/><br/>Payment processing"]
             Exam["📝 Exam Service<br/><br/>Exams & grading"]
-            Notification["📬 Notification Service<br/><br/>Email & SMS"]
+            Notification["📬 Notification Service<br/><br/>Email"]
             IoT["🌡️ IoT Service<br/><br/>Sensor analytics"]
             Tracking["🚌 Tracking Service<br/><br/>Shuttle GPS"]
         end
@@ -217,7 +217,6 @@ flowchart TB
     end
 
     ExtEmail["📧 Email Provider"]
-    ExtSMS["📱 SMS Provider"]
     ExtPay["💳 Payment Provider"]
     Sensors["🌡️ IoT Sensors"]
 
@@ -234,7 +233,6 @@ flowchart TB
     Booking -->|"Availability cache"| Cache
     
     Notification -->|"SMTP"| ExtEmail
-    Notification -->|"API"| ExtSMS
     Payment -->|"API"| ExtPay
     Sensors -->|"MQTT/HTTP"| IoT
 
@@ -245,7 +243,6 @@ flowchart TB
     style WebApp fill:#438dd5,stroke:#2e6295,stroke-width:2px,color:#fff
     style User fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff
     style ExtEmail fill:#999999,stroke:#666,color:#fff
-    style ExtSMS fill:#999999,stroke:#666,color:#fff
     style ExtPay fill:#999999,stroke:#666,color:#fff
     style Sensors fill:#999999,stroke:#666,color:#fff
 ```
@@ -268,8 +265,6 @@ flowchart TB
 
     EmailSystem["📧 Email System<br/><br/>External email provider<br/>for notifications"]
     
-    SMSGateway["📱 SMS Gateway<br/><br/>External SMS provider<br/>for alerts"]
-    
     PaymentProvider["💳 Payment Provider<br/><br/>External payment processing"]
 
     IoTSensors["🌡️ IoT Sensors<br/><br/>Campus environmental sensors<br/>and shuttle GPS devices"]
@@ -279,7 +274,6 @@ flowchart TB
     Admin -->|"Administers"| System
     
     System -->|"Sends emails via"| EmailSystem
-    System -->|"Sends SMS via"| SMSGateway
     System -->|"Processes payments via"| PaymentProvider
     IoTSensors -->|"Sends telemetry to"| System
 
@@ -288,7 +282,6 @@ flowchart TB
     style Instructor fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff
     style Admin fill:#08427b,stroke:#052e56,stroke-width:2px,color:#fff
     style EmailSystem fill:#999999,stroke:#666666,stroke-width:2px,color:#fff
-    style SMSGateway fill:#999999,stroke:#666666,stroke-width:2px,color:#fff
     style PaymentProvider fill:#999999,stroke:#666666,stroke-width:2px,color:#fff
     style IoTSensors fill:#999999,stroke:#666666,stroke-width:2px,color:#fff
 ```
@@ -305,4 +298,5 @@ flowchart TB
 | **Database per Service** | Isolated PostgreSQL instances | All services |
 | **Observer** | Event-driven notifications | Notification Service |
 | **Strategy** | Payment method selection | Payment Service |
+
 
