@@ -288,3 +288,112 @@ Essential for reliability	Ensures event-driven systems behave predictably under 
 
 
 ---
+
+
+**Question:**
+```
+How does this architecture handle failures and ensure reliability across multiple microservices?
+```
+
+**Response:**
+🟦 1. Preventing Cascading Failures with Circuit Breakers
+
+The system uses Resilience4j Circuit Breakers to prevent failures in one service from propagating to others.
+
+Detects when a downstream service becomes slow or unavailable
+
+Opens the circuit to stop sending new requests
+
+Allows the failing service time to recover
+
+Explicitly used in the Exam Service → Notification Service integration
+
+This ensures that a single failing component does not disrupt the whole system.
+
+🟩 2. Handling Transient Errors with Retry and Exponential Backoff
+
+For temporary network or database problems, the architecture applies:
+
+Automatic retry attempts
+
+Increasing delay between retries (exponential backoff)
+
+Protection against flooding the failing service
+
+Ideal for services with external dependencies
+
+This significantly improves stability during short-lived outages.
+
+🟧 3. Message Durability and Failure Isolation via RabbitMQ
+
+All asynchronous communication is handled through RabbitMQ, which adds built-in resilience:
+
+Durable messages
+
+Acknowledgement (Ack/Nack) for safe processing
+
+Automatic retry mechanisms
+
+Dead Letter Queues (DLQs) for messages that repeatedly fail
+
+Guarantees no messages are lost even under high load or service downtime
+
+RabbitMQ forms the reliability backbone of the system.
+
+🟨 4. Distributed Transaction Reliability via Saga (Choreography)
+
+For workflows involving multiple services, the system uses the Saga Pattern (Choreography):
+
+Each service publishes domain events
+
+Other services react independently
+
+No central orchestrator needed
+
+Compensation actions for failure scenarios
+
+Exact example in the project:
+
+Marketplace → Payment → Marketplace
+
+This prevents locking, reduces coupling, and guarantees eventual consistency.
+
+🟫 5. Failure Isolation with Database per Service
+
+Each microservice has its own dedicated PostgreSQL instance, ensuring:
+
+Strong data isolation
+
+No direct cross-service database access
+
+A database failure only affects its own service, not others
+
+This design dramatically increases system reliability.
+
+🟥 6. Reliability Support via Redis Cache
+
+Redis improves resilience in several ways:
+
+Reduces load on core services (Auth, Booking)
+
+Enables rate limiting to prevent overload
+
+Stores JWT blacklists for secure authentication
+
+Provides ultra-fast responses during system strain
+
+Redis effectively acts as a stabilizer under high traffic.
+
+🟪 7. Loose Coupling Through Event-Driven Architecture
+
+Because communication is asynchronous and event-based:
+
+Services do not depend on each other’s availability
+
+Messages are stored until consumers are ready
+
+There is no synchronous dependency chain
+
+Services remain operational even if others fail temporarily
+
+---
