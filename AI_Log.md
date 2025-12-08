@@ -464,5 +464,78 @@ Checklist for implementation
  Tests: concurrency load tests, integration tests, chaos tests.
 
  Observability: tracing, reservation metrics, alerts.
+In the given microservices architecture, which uses an event-driven Saga (Choreography) pattern with RabbitMQ, how does the system ensure data consistency across services such as Marketplace, Payment, and Booking without relying on distributed transactions, and what failure-handling mechanisms prevent the Saga from breaking under partial failures?
+```
+**Response:**
+The system maintains data consistency across Marketplace, Payment, and Booking by using an event-driven Saga (Choreography) instead of distributed ACID transactions. Each service independently performs its local transaction and then emits an event indicating the new state. Other services react to these events and execute their own compensating or follow-up actions.
+
+Here is how consistency is ensured:
+
+1. Local Transactions Only
+
+Each microservice owns its own PostgreSQL database, so every step of the Saga is a fully isolated local transaction.
+There is no shared database and no distributed locks.
+
+2. Domain Events via RabbitMQ
+
+After completing its local transaction, a service publishes an event such as:
+
+OrderCreated
+
+PaymentCompleted
+
+PaymentFailed
+
+BookingConfirmed
+
+Other services subscribe and react to those events. This creates an event chain that forms the Saga.
+
+3. Compensating Actions
+
+If a step fails, services emit compensating events instead of rolling back globally.
+Example:
+
+If Payment fails → Payment Service publishes PaymentFailed
+
+Marketplace Service reacts and marks the order as Cancelled
+
+Notification Service sends an email accordingly
+
+4. Fault Tolerance Mechanisms
+
+The architecture includes several safety layers:
+
+a. Dead Letter Queues (DLQ)
+
+Failed messages go to a DLQ in RabbitMQ where they can be inspected and manually replayed.
+This prevents message loss and Saga desynchronization.
+
+b. Retry with Exponential Backoff
+
+Transient failures (like network glitches) are retried automatically.
+This avoids unnecessary compensations.
+
+c. Circuit Breaker (Resilience4j)
+
+Used especially in services like Exam → Notification.
+If an external dependency fails repeatedly, the breaker opens and stops propagating the failure.
+
+d. Idempotent Consumers
+
+Event handlers apply updates safely even when the same event is delivered more than once.
+
+e. Optimistic Locking
+
+Booking Service uses @Version to prevent race conditions and overbooking.
+
+5. Eventual Consistency
+
+Because each service updates itself asynchronously, the system doesn’t guarantee immediate consistency—but it ensures eventual consistency through:
+
+deterministic event flows
+
+compensations
+
+replayable messages
 
 ---
