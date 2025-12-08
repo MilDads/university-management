@@ -148,6 +148,64 @@ flowchart TB
 ```
 ## Level 3: Component Diagram
 
+### API Gateway
+
+Shows internal structure of the API Gateway, including routing, JWT validation, RBAC enforcement, rate limiting, and request flow management.
+
+```mermaid
+---
+config:
+  theme: dark
+---
+flowchart TB
+
+    WebApp["🌐 Web Application (SPA)"]
+
+    MQ["🐰 RabbitMQ"] 
+    Redis["⚡ Redis"] 
+
+    subgraph APIGateway["🚪 API Gateway (Spring Cloud Gateway)"]
+
+        Router["🔀 Routing Layer\nMaps paths to services"]
+
+        JwtFilter["🛡 JWT Authentication Filter\nValidates token signature & expiry"]
+
+        RBACFilter["🔒 RBAC Authorization Filter\nChecks user roles & permissions"]
+
+        RateLimiter["⏱ Rate Limiter\nRedis-based token bucket"]
+
+        GlobalError["⚠ Global Exception Handler\nTransforms errors to unified responses"]
+
+        LoggingFilter["📜 Logging & Tracing Filter\nRequest/Response logs\nCorrelation IDs"]
+
+        LoadBalancer["⚖ Load Balancer\nService instance selection"]
+
+    end
+
+    %% Connections
+    WebApp -->|"HTTPS"| Router
+
+    Router --> JwtFilter
+    JwtFilter --> RBACFilter
+    RBACFilter --> RateLimiter
+    RateLimiter --> LoadBalancer
+    LoadBalancer -->|"Forward request"| Downstream["All backend microservices"]
+
+    RateLimiter --> Redis
+    JwtFilter --> Redis
+
+    %% Styles
+    style Router fill:#438dd5,stroke:#2e6295,stroke-width:2px,color:#fff
+    style JwtFilter fill:#2a9d8f,stroke:#1a6d5f,stroke-width:2px,color:#fff
+    style RBACFilter fill:#2a9d8f,stroke:#1a6d5f,stroke-width:2px,color:#fff
+    style RateLimiter fill:#e76f51,stroke:#b74c2f,stroke-width:2px,color:#fff
+    style LoadBalancer fill:#1168bd,stroke:#0b4884,stroke-width:2px,color:#fff
+    style LoggingFilter fill:#666,stroke:#444,stroke-width:2px,color:#fff
+    style GlobalError fill:#999,stroke:#555,stroke-width:2px,color:#fff
+    style Redis fill:#dc143c,stroke:#a00000,stroke-width:2px,color:#fff
+```
+##
+
 ### Marketplace Service
 
 Shows internal structure of the Marketplace service with Saga choreography.
@@ -528,4 +586,5 @@ flowchart TB
     style APIGateway fill:#1168bd,stroke:#0b4884,stroke-width:2px,color:#fff
     style MessageBroker fill:#ff6b6b,stroke:#cc5555,stroke-width:2px,color:#fff
 ```
+
 
