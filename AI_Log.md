@@ -518,3 +518,72 @@ compensations
 replayable messages
 
 ---
+**Question:**
+```
+How can we structure the Saga for booking a resource so that overbooking is prevented even when multiple requests arrive concurrently across multiple instances?
+```
+
+**Response:**
+Use a reservation-based Saga (reserve → confirm → commit) where:
+
+Booking Service initiates the Saga and reserves capacity on the Resource Service (a local atomic decrement / row lock).
+
+Reserve step creates a short-lived reservation record (with TTL) in Resource DB (or Redis) and is transactional in the Resource Service.
+
+If reserve succeeds, Booking Service proceeds to payment/confirm steps; if anything fails or times out, the Saga issues a compensating cancel to release the reservation.
+
+Use idempotent operations, unique constraints, and local ACID operations (row locks or atomic counter decrements) to make reservation non-racy.
+
+Persist events using the Transactional Outbox pattern in each service and publish via RabbitMQ to avoid lost messages.
+
+This preserves eventual consistency via Saga events and prevents overbooking by enforcing the constraint at the resource owner (Resource Service) using local atomicity.
+
+Monitoring, observability, and testing
+
+Trace IDs: Attach a correlation ID to the Saga. Propagate it in all events and logs so you can trace a whole Saga across services.
+
+Metrics: publish metrics for reservations_created, reservations_confirmed, reservations_cancelled, reservation_timeouts, and overbooking_attempts.
+
+Alerts: alert on reservation_timeouts spikes and capacity_available negative attempts.
+
+Integration tests: simulate concurrent booking requests (100s parallel) for same resource and assert capacity_available >= 0 and no more CONFIRMED reservations than capacity_total.
+
+Chaos tests: introduce delays/failures in Resource Service and verify compensations and TTL logic work.
+
+Alternatives & tradeoffs
+
+Centralized lock service (Redis Redlock): serializes access but adds dependency/complexity and single point of failure risk; still requires DB enforcement.
+
+Two-phase commit (2PC): not allowed given microservice autonomy and requirement to avoid distributed transactions.
+
+Choreography-only Saga: less centralized but harder to ensure strict capacity constraints; not recommended where strict no-overbooking is required.
+
+Optimistic with retries: reduces locking contention but requires backoff and retries; acceptable if conflicts are rare.
+
+Failure scenarios & recovery
+
+Resource Service down after Reserve but before Confirm: reservation TTL will expire and restore capacity; Booking Service should have retry/backoff and cancel logic.
+
+Booking Service crashes after Reserve: when Booking Service restarts it should reconcile pending bookings (query reservations) and either confirm or cancel.
+
+Message loss: transactional outbox + durable RabbitMQ queues prevents loss; consumer idempotency protects against duplicates.
+Checklist for implementation
+
+Resource Service enforces capacity changes atomically in local transactions.
+
+Reservation rows created with TTL and unique booking_id.
+
+Booking Service acts as Saga orchestrator with clear state machine (PENDING → CONFIRMED/CANCELLED).
+
+Idempotency keys and correlation IDs present on all commands/events.
+
+Transactional outbox pattern implemented in both services.
+
+RabbitMQ exchanges/queues configured durable + appropriate routing (direct/topic).
+
+Background job to cancel expired reservations and publish events.
+
+Tests: concurrency load tests, integration tests, chaos tests.
+
+Observability: tracing, reservation metrics, alerts.
+---
