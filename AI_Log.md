@@ -409,6 +409,38 @@ The architecture supports horizontal scaling by adding more resources as the num
 The system can support an unlimited number of "sellers" and "products" in the marketplace module. This is facilitated by the distributed nature of the system and its ability to scale resources as needed.
 
 ---
+
+**Question:**
+
+
+```How does the architecture maintain security and ensure data consistency between critical services such as the Auth Service, User Service, and API Gateway?```
+
+**Response:**
+Security is enforced via JWT tokens issued by the Auth Service.  
+The API Gateway validates all incoming tokens, applies rate-limiting, and forwards only authenticated requests to internal services. This centralizes authentication and keeps services focused solely on authorization.  
+Data consistency is maintained asynchronously: when a user registers, the Auth Service publishes a UserRegistered event through RabbitMQ.  
+The User Service listens to this event and creates the user profile inside its own PostgreSQL database.  
+Any updates to roles or profiles are also propagated through events, allowing all services to stay eventually consistent while remaining fully decoupled.
+
+---
+
+
+**Question:**
+
+
+```Why does each microservice in the project have its own dedicated PostgreSQL database instead of sharing a single central database?```
+
+
+**Response:**
+
+
+Each microservice represents a separate business domain with its own data ownership and internal rules.  
+Using a dedicated PostgreSQL database per service enforces strong domain boundaries and prevents unwanted coupling between services.  
+This separation allows teams to evolve their schemas independently without risking cross-service conflicts.  
+It also increases reliability: if one database becomes slow or faces issues, other services remain fully operational.  
+Finally, isolated data storage is essential for event-driven architectures, enabling services to maintain local transactional integrity while synchronizing changes through domain events.
+---
+
 **Question:**
 ```
 In the given microservices architecture, which uses an event-driven Saga (Choreography) pattern with RabbitMQ, how does the system ensure data consistency across services such as Marketplace, Payment, and Booking without relying on distributed transactions, and what failure-handling mechanisms prevent the Saga from breaking under partial failures?
