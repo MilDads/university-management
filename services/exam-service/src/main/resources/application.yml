@@ -1,0 +1,22 @@
+server:
+port: 8085
+
+
+spring:
+datasource:
+url: jdbc:postgresql://exam-db:5432/examdb
+username: exam
+password: exam
+jpa:
+hibernate:
+ddl-auto: update
+show-sql: true
+
+
+resilience4j:
+circuitbreaker:
+instances:
+notificationService:
+failureRateThreshold: 50
+waitDurationInOpenState: 10s
+slidingWindowSize: 5

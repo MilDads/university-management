@@ -109,6 +109,21 @@ services:
         condition: service_healthy
     networks:
       - microservices-network
+
+  # Exam Service
+  exam-service:
+  build: ./exam-service
+  ports:
+    - "8085:8085"
+  depends_on:
+    - exam-db
+
+exam-db:
+  image: postgres
+  environment:
+    POSTGRES_DB: examdb
+    POSTGRES_USER: exam
+    POSTGRES_PASSWORD: exam
       
 networks:
   microservices-network:
