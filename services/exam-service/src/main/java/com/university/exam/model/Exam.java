@@ -1,16 +1,30 @@
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.Data;
+import javax.persistence.*;
+import javax.validation.constraints.NotNull;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Data
 @Entity
 public class Exam {
-@Id
-@GeneratedValue
-private Long id;
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-private String title;
-private String instructorId;
-private LocalDateTime startTime;
-private LocalDateTime endTime;
+    @NotNull
+    private String title;
 
+    @NotNull
+    private String instructorId;
 
-@OneToMany(cascade = CascadeType.ALL)
-private List<Question> questions;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime startTime;
+
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    private LocalDateTime endTime;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "exam")
+    private List<Question> questions;
 }
