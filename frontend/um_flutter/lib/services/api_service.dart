@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/resource.dart';
+import '../models/booking.dart';
 
 class ApiService {
   // For local development (web/desktop): http://localhost:8080
@@ -247,6 +248,93 @@ class ApiService {
       }
     } catch (e) {
       throw Exception('Error deleting resource: ${e.toString()}');
+    }
+  }
+
+  // Booking APIs
+  Future<Booking> createBooking({
+    required int resourceId,
+    required DateTime startTime,
+    required DateTime endTime,
+    required String purpose,
+  }) async {
+    try {
+      // Need to pass X-User-Id header as well, but backend might extract from token?
+      // Based on BookingController: @RequestHeader(value = "X-User-Id", required = false) String userId
+      // And API Gateway might be stripping/forwarding headers.
+      // Usually API Gateway extracts userId from JWT and forwards it as X-User-Id.
+      // Assuming the Gateway does this.
+
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/bookings'),
+            headers: _getHeaders(requiresAuth: true),
+            body: jsonEncode({
+              'resourceId': resourceId,
+              'startTime': startTime.toIso8601String(),
+              'endTime': endTime.toIso8601String(),
+              'purpose': purpose,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 201) {
+        return Booking.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized - please login again');
+      } else if (response.statusCode == 409) {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Booking conflict');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to create booking');
+      }
+    } catch (e) {
+      throw Exception('Error creating booking: ${e.toString()}');
+    }
+  }
+
+  Future<List<Booking>> getMyBookings() async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/bookings/my-bookings'),
+            headers: _getHeaders(requiresAuth: true),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Booking.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized - please login again');
+      } else {
+        throw Exception('Failed to load bookings');
+      }
+    } catch (e) {
+      throw Exception('Error loading bookings: ${e.toString()}');
+    }
+  }
+
+  Future<void> cancelBooking(int id) async {
+    try {
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/api/bookings/$id'),
+            headers: _getHeaders(requiresAuth: true),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return;
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized - please login again');
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['error'] ?? 'Failed to cancel booking');
+      }
+    } catch (e) {
+      throw Exception('Error cancelling booking: ${e.toString()}');
     }
   }
 }

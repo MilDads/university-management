@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/resource.dart';
 import '../providers/app_providers.dart';
 import 'add_resource_screen.dart';
+import 'my_bookings_screen.dart';
+import 'create_booking_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -43,6 +45,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const PopupMenuDivider(),
+               const PopupMenuItem(
+                value: 'my_bookings',
+                child: Row(
+                  children: [
+                    Icon(Icons.calendar_month),
+                    SizedBox(width: 8),
+                    Text('My Bookings'),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'logout',
                 child: Row(
@@ -57,6 +70,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 ref.read(authProvider.notifier).logout();
+              } else if (value == 'my_bookings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyBookingsScreen(),
+                  ),
+                );
               }
             },
           ),
@@ -264,7 +284,7 @@ class _ResourceCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: _getColorForStatus(
                         resource.status,
-                      ).withOpacity(0.1),
+                      ).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -308,6 +328,25 @@ class _ResourceCard extends StatelessWidget {
                   ),
                 ],
               ),
+              if (resource.status == 'AVAILABLE') ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  CreateBookingScreen(resource: resource),
+                        ),
+                      );
+                    },
+                    child: const Text('Book Now'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

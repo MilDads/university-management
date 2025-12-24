@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
 import '../models/resource.dart';
+import '../models/booking.dart';
 import '../services/api_service.dart';
 
 // API Service Provider
@@ -117,3 +118,9 @@ final availableResourcesByTypeProvider =
       final apiService = ref.read(apiServiceProvider);
       return apiService.getAvailableResourcesByType(type);
     });
+
+// My Bookings Provider
+final myBookingsProvider = FutureProvider<List<Booking>>((ref) async {
+  final apiService = ref.read(apiServiceProvider);
+  return apiService.getMyBookings();
+});
