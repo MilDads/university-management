@@ -54,7 +54,7 @@ jobs:
       - run: |
           mkdir -p release
           cd frontend/um_flutter/build/web
-          tar -czf ../../../release/um_flutter-web.tar.gz *
+          tar -czf $GITHUB_WORKSPACE/release/um_flutter-web.tar.gz *
       - uses: actions/upload-artifact@v4
         with:
           name: web-release
@@ -99,7 +99,7 @@ jobs:
       - run: |
           mkdir -p release
           cd frontend/um_flutter/build/linux/x64/release/bundle
-          tar -czf ../../../../../release/um_flutter-linux.tar.gz *
+          tar -czf $GITHUB_WORKSPACE/release/um_flutter-linux.tar.gz *
       - uses: actions/upload-artifact@v4
         with:
           name: linux-release
