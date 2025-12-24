@@ -120,7 +120,19 @@ final availableResourcesByTypeProvider =
     });
 
 // My Bookings Provider
-final myBookingsProvider = FutureProvider<List<Booking>>((ref) async {
+final myBookingsProvider = FutureProvider.autoDispose<List<Booking>>((ref) async {
   final apiService = ref.read(apiServiceProvider);
   return apiService.getMyBookings();
+});
+
+// Single Resource Provider
+final resourceProvider = FutureProvider.autoDispose.family<Resource, int>((ref, id) async {
+  final apiService = ref.read(apiServiceProvider);
+  return apiService.getResourceById(id);
+});
+
+// Bookings for Resource Provider
+final bookingsForResourceProvider = FutureProvider.autoDispose.family<List<Booking>, int>((ref, resourceId) async {
+  final apiService = ref.read(apiServiceProvider);
+  return apiService.getBookingsForResource(resourceId);
 });

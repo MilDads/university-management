@@ -316,6 +316,28 @@ class ApiService {
     }
   }
 
+  Future<List<Booking>> getBookingsForResource(int resourceId) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/api/bookings/resource/$resourceId'),
+            headers: _getHeaders(requiresAuth: true),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        return data.map((json) => Booking.fromJson(json)).toList();
+      } else if (response.statusCode == 401) {
+        throw Exception('Unauthorized - please login again');
+      } else {
+        throw Exception('Failed to load resource bookings');
+      }
+    } catch (e) {
+      throw Exception('Error loading resource bookings: ${e.toString()}');
+    }
+  }
+
   Future<void> cancelBooking(int id) async {
     try {
       final response = await http

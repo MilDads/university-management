@@ -20,6 +20,9 @@ public class Booking {
     @Column(nullable = false)
     private String userId;
 
+    @Column(name = "user_role")
+    private String userRole;
+
     @Column(nullable = false)
     private LocalDateTime startTime;
 
@@ -47,10 +50,11 @@ public class Booking {
     // Constructors
     public Booking() {}
 
-    public Booking(Long resourceId, String userId, LocalDateTime startTime,
+    public Booking(Long resourceId, String userId, String userRole, LocalDateTime startTime,
                    LocalDateTime endTime, String purpose) {
         this.resourceId = resourceId;
         this.userId = userId;
+        this.userRole = userRole;
         this.startTime = startTime;
         this.endTime = endTime;
         this.purpose = purpose;
@@ -79,6 +83,14 @@ public class Booking {
 
     public void setUserId(String userId) {
         this.userId = userId;
+    }
+
+    public String getUserRole() {
+        return userRole;
+    }
+
+    public void setUserRole(String userRole) {
+        this.userRole = userRole;
     }
 
     public LocalDateTime getStartTime() {

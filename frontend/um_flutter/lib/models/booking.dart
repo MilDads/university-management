@@ -2,6 +2,7 @@ class Booking {
   final int id;
   final int resourceId;
   final String userId;
+  final String? userRole;
   final DateTime startTime;
   final DateTime endTime;
   final String purpose;
@@ -11,6 +12,7 @@ class Booking {
     required this.id,
     required this.resourceId,
     required this.userId,
+    this.userRole,
     required this.startTime,
     required this.endTime,
     required this.purpose,
@@ -22,6 +24,7 @@ class Booking {
       id: json['id'],
       resourceId: json['resourceId'],
       userId: json['userId'],
+      userRole: json['userRole'],
       startTime: DateTime.parse(json['startTime']),
       endTime: DateTime.parse(json['endTime']),
       purpose: json['purpose'],
@@ -34,6 +37,7 @@ class Booking {
       'id': id,
       'resourceId': resourceId,
       'userId': userId,
+      'userRole': userRole,
       'startTime': startTime.toIso8601String(),
       'endTime': endTime.toIso8601String(),
       'purpose': purpose,

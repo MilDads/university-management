@@ -43,8 +43,8 @@ public class BookingService {
 //            maxAttempts = 3,
 //            backoff = @Backoff(delay = 100)
 //    )
-    public BookingResponse createBooking(CreateBookingRequest request, String userId) {
-        log.info("Creating booking for resource {} by user {}", request.resourceId(), userId);
+    public BookingResponse createBooking(CreateBookingRequest request, String userId, String userRole) {
+        log.info("Creating booking for resource {} by user {} ({})", request.resourceId(), userId, userRole);
 
         // Time Slot Validation: Check for overlapping bookings
         List<Booking> overlappingBookings = bookingRepository.findOverlappingBookings(
@@ -65,6 +65,7 @@ public class BookingService {
         Booking booking = new Booking(
                 request.resourceId(),
                 userId,
+                userRole,
                 request.startTime(),
                 request.endTime(),
                 request.purpose()

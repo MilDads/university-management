@@ -169,6 +169,74 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
               ),
               const SizedBox(height: 16),
               
+              // Existing Bookings Display
+              const Text(
+                'Existing Bookings for Selected Date:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final bookingsAsync = ref.watch(bookingsForResourceProvider(widget.resource.id));
+                    
+                    return bookingsAsync.when(
+                      data: (bookings) {
+                        final dailyBookings = bookings.where((b) => 
+                          b.startTime.year == _selectedDate.year &&
+                          b.startTime.month == _selectedDate.month &&
+                          b.startTime.day == _selectedDate.day &&
+                          (b.status == 'CONFIRMED' || b.status == 'PENDING')
+                        ).toList();
+                        
+                        dailyBookings.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+                        if (dailyBookings.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(16.0),
+                            child: Center(child: Text('No bookings for this date. Available all day.')),
+                          );
+                        }
+
+                        return ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: dailyBookings.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                             final booking = dailyBookings[index];
+                             final start = TimeOfDay.fromDateTime(booking.startTime.toLocal()).format(context);
+                             final end = TimeOfDay.fromDateTime(booking.endTime.toLocal()).format(context);
+                             return ListTile(
+                               dense: true,
+                               leading: const Icon(Icons.block, color: Colors.red),
+                               title: Text(
+                                 '$start - $end',
+                                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                               ),
+                               subtitle: Text('Booked by ${booking.userRole ?? "User"}'),
+                             );
+                          },
+                        );
+                      },
+                      loading: () => const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                      error: (e, _) => Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text('Failed to check availability: $e', style: const TextStyle(color: Colors.red)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              
               // Time Selection
               Row(
                 children: [

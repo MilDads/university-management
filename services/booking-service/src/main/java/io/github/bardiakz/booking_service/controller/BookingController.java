@@ -31,7 +31,8 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<?> createBooking(
             @Valid @RequestBody CreateBookingRequest request,
-            @RequestHeader(value = "X-User-Id", required = false) String userId) {
+            @RequestHeader(value = "X-User-Id", required = false) String userId,
+            @RequestHeader(value = "X-User-Role", required = false) String userRole) {
 
         if (userId == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -41,7 +42,7 @@ public class BookingController {
         log.info("Create booking request from user: {}", userId);
 
         try {
-            BookingResponse response = bookingService.createBooking(request, userId);
+            BookingResponse response = bookingService.createBooking(request, userId, userRole != null ? userRole : "STUDENT");
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (Exception e) {
             log.error("Error creating booking", e);
@@ -99,17 +100,16 @@ public class BookingController {
     }
 
     /**
-     * Get bookings for a resource (Admin/Faculty only)
+     * Get bookings for a resource (Available to all users to check availability)
      */
     @GetMapping("/resource/{resourceId}")
     public ResponseEntity<List<BookingResponse>> getBookingsByResource(
             @PathVariable Long resourceId,
             @RequestHeader(value = "X-User-Role", required = false) String userRole) {
 
-        // RBAC: Only FACULTY and ADMIN can view all bookings for a resource
-        if (!"FACULTY".equals(userRole) && !"ADMIN".equals(userRole)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
+        // Allow all users to view bookings to see availability
+        // Privacy note: In a real production system, we might want to return a DTO
+        // without the userId for non-admin users.
 
         log.debug("Get bookings for resource: {}", resourceId);
         List<BookingResponse> bookings = bookingService.getBookingsByResource(resourceId);
