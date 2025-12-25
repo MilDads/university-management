@@ -15,13 +15,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 }
 
 @Repository
-interface OrderRepository extends JpaRepository<Order, Long> {
-    List<Order> findByUserId(String userId);
-    List<Order> findByStatus(OrderStatus status);
-    List<Order> findByUserIdAndStatus(String userId, OrderStatus status);
-}
-
-@Repository
 interface OrderItemRepository extends JpaRepository<OrderItem, Long> {
     List<OrderItem> findByOrderId(Long orderId);
 }

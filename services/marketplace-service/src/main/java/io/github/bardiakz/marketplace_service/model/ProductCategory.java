@@ -9,10 +9,3 @@ public enum ProductCategory {
     OTHER
 }
 
-public enum OrderStatus {
-    PENDING,
-    PAYMENT_PENDING,
-    COMPLETED,
-    FAILED,
-    CANCELLED
-}
