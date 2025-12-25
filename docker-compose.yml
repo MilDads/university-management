@@ -136,6 +136,28 @@ services:
     networks:
       - microservices-network
 
+  # Marketplace Service
+  marketplace-service:
+    build: ./services/marketplace-service
+    container_name: marketplace-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_URL=jdbc:postgresql://postgres:5432/marketplacedb
+      - DB_USERNAME=marketplace_user
+      - DB_PASSWORD=marketplace_pass
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
 networks:
   microservices-network:
     driver: bridge

@@ -23,3 +23,11 @@ GRANT ALL PRIVILEGES ON DATABASE bookingdb TO booking_user;
 
 \c bookingdb;
 GRANT ALL ON SCHEMA public TO booking_user;
+
+-- Create the marketplacedb database
+CREATE DATABASE marketplacedb;
+CREATE USER marketplace_user WITH PASSWORD 'marketplace_pass';
+GRANT ALL PRIVILEGES ON DATABASE marketplacedb TO marketplace_user;
+
+\c marketplacedb;
+GRANT ALL ON SCHEMA public TO marketplace_user;
