@@ -113,7 +113,7 @@ class _AddResourceScreenState extends ConsumerState<AddResourceScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<ResourceType>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(
                   labelText: 'Resource Type',
                   prefixIcon: Icon(Icons.category),

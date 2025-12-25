@@ -1,15 +1,40 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/resource.dart';
 import '../models/booking.dart';
+
+class AuthException implements Exception {
+  final String message;
+  AuthException(this.message);
+  @override
+  String toString() => message;
+}
+
+class NetworkException implements Exception {
+  final String message;
+  NetworkException(this.message);
+  @override
+  String toString() => message;
+}
+
+class ServerException implements Exception {
+  final String message;
+  ServerException(this.message);
+  @override
+  String toString() => message;
+}
 
 class ApiService {
   // For local development (web/desktop): http://localhost:8080
   // For Android emulator: http://10.0.2.2:8080
   // For iOS simulator: http://localhost:8080
   // For physical device: http://YOUR_COMPUTER_IP:8080 (e.g., http://192.168.1.100:8080)
-  static const String baseUrl =
-      'http://localhost:8080'; // Default for Android emulator
+  static String get baseUrl {
+    if (kIsWeb) return 'http://localhost:8080';
+    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8080';
+    return 'http://localhost:8080';
+  }
 
   String? _token;
 
@@ -60,10 +85,10 @@ class ApiService {
         );
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Registration failed');
+        throw ServerException(error['error'] ?? 'Registration failed');
       }
     } catch (e) {
-      throw Exception('Network error: ${e.toString()}');
+      throw NetworkException('Network error: ${e.toString()}');
     }
   }
 
@@ -91,20 +116,20 @@ class ApiService {
         );
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Login failed');
+        throw AuthException(error['error'] ?? 'Login failed');
       }
     } catch (e) {
       if (e.toString().contains('Connection refused') ||
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('Network is unreachable')) {
-        throw Exception(
+        throw NetworkException(
           'Cannot connect to server. Check if:\n'
           '1. Backend server is running\n'
           '2. baseUrl is correct ($baseUrl)\n'
           '3. Device can reach the server',
         );
       }
-      throw Exception('Network error: ${e.toString()}');
+      throw NetworkException('Network error: ${e.toString()}');
     }
   }
 
@@ -122,12 +147,13 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Resource.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load resources');
+        throw ServerException('Failed to load resources');
       }
     } catch (e) {
-      throw Exception('Error loading resources: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading resources: ${e.toString()}');
     }
   }
 
@@ -143,12 +169,13 @@ class ApiService {
       if (response.statusCode == 200) {
         return Resource.fromJson(jsonDecode(response.body));
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load resource');
+        throw ServerException('Failed to load resource');
       }
     } catch (e) {
-      throw Exception('Error loading resource: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading resource: ${e.toString()}');
     }
   }
 
@@ -165,12 +192,13 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Resource.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load resources by type');
+        throw ServerException('Failed to load resources by type');
       }
     } catch (e) {
-      throw Exception('Error loading resources: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading resources: ${e.toString()}');
     }
   }
 
@@ -187,12 +215,13 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Resource.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load available resources');
+        throw ServerException('Failed to load available resources');
       }
     } catch (e) {
-      throw Exception('Error loading resources: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading resources: ${e.toString()}');
     }
   }
 
@@ -221,13 +250,14 @@ class ApiService {
       if (response.statusCode == 201 || response.statusCode == 200) {
         return Resource.fromJson(jsonDecode(response.body));
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Failed to create resource');
+        throw ServerException(error['error'] ?? 'Failed to create resource');
       }
     } catch (e) {
-      throw Exception('Error creating resource: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error creating resource: ${e.toString()}');
     }
   }
 
@@ -241,13 +271,14 @@ class ApiService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else if (response.statusCode != 200) {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Failed to delete resource');
+        throw ServerException(error['error'] ?? 'Failed to delete resource');
       }
     } catch (e) {
-      throw Exception('Error deleting resource: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error deleting resource: ${e.toString()}');
     }
   }
 
@@ -281,16 +312,17 @@ class ApiService {
       if (response.statusCode == 201) {
         return Booking.fromJson(jsonDecode(response.body));
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else if (response.statusCode == 409) {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Booking conflict');
+        throw ServerException(error['error'] ?? 'Booking conflict');
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Failed to create booking');
+        throw ServerException(error['error'] ?? 'Failed to create booking');
       }
     } catch (e) {
-      throw Exception('Error creating booking: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error creating booking: ${e.toString()}');
     }
   }
 
@@ -307,12 +339,13 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Booking.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load bookings');
+        throw ServerException('Failed to load bookings');
       }
     } catch (e) {
-      throw Exception('Error loading bookings: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading bookings: ${e.toString()}');
     }
   }
 
@@ -329,12 +362,13 @@ class ApiService {
         final List<dynamic> data = jsonDecode(response.body);
         return data.map((json) => Booking.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
-        throw Exception('Failed to load resource bookings');
+        throw ServerException('Failed to load resource bookings');
       }
     } catch (e) {
-      throw Exception('Error loading resource bookings: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error loading resource bookings: ${e.toString()}');
     }
   }
 
@@ -350,13 +384,14 @@ class ApiService {
       if (response.statusCode == 200) {
         return;
       } else if (response.statusCode == 401) {
-        throw Exception('Unauthorized - please login again');
+        throw AuthException('Unauthorized - please login again');
       } else {
         final error = jsonDecode(response.body);
-        throw Exception(error['error'] ?? 'Failed to cancel booking');
+        throw ServerException(error['error'] ?? 'Failed to cancel booking');
       }
     } catch (e) {
-      throw Exception('Error cancelling booking: ${e.toString()}');
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error cancelling booking: ${e.toString()}');
     }
   }
 }

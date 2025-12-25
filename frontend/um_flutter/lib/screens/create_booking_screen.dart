@@ -29,10 +29,13 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final firstDate = DateTime(now.year, now.month, now.day);
+    
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
-      firstDate: DateTime.now(),
+      firstDate: firstDate,
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
     if (picked != null && picked != _selectedDate) {
@@ -85,7 +88,8 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       return;
     }
     
-    if (startDateTime.isBefore(DateTime.now())) {
+    // Allow a 5-minute grace period for "now" bookings
+    if (startDateTime.isBefore(DateTime.now().subtract(const Duration(minutes: 5)))) {
        ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Cannot book in the past')),
       );
