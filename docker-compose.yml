@@ -18,6 +18,25 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-tracking:
+    image: postgres:18.1
+    container_name: postgres-tracking
+    environment:
+      POSTGRES_DB: tracking_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5440:5432"
+    volumes:
+      - postgres-tracking-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # Redis
   redis:
     image: redis:8.4.0
@@ -158,9 +177,37 @@ services:
     networks:
       - microservices-network
 
+  # Tracking Service
+  tracking-service:
+    build: ./services/tracking-service
+    container_name: tracking-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_URL=jdbc:postgresql://postgres-tracking:5432/tracking_db
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres-tracking:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microservices-network
+      
 networks:
   microservices-network:
     driver: bridge
 
 volumes:
   postgres_data:
+  postgres-tracking-data:
+    driver: local
