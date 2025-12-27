@@ -8,6 +8,7 @@ import 'my_bookings_screen.dart';
 import 'create_booking_screen.dart';
 import 'marketplace_screen.dart';
 import 'tracking_screen.dart';
+import 'my_payments_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -131,6 +132,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.payment),
+              title: const Text('My Payments'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const MyPaymentsScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.assignment),
               title: const Text('Online Exams'),

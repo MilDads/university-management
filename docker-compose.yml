@@ -177,6 +177,28 @@ services:
     networks:
       - microservices-network
 
+  payment-service:
+    build: ./services/payment-service
+    container_name: payment-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_URL=jdbc:postgresql://postgres:5432/paymentdb
+      - DB_USERNAME=payment_user
+      - DB_PASSWORD=payment_pass
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USERNAME=admin
+      - RABBITMQ_PASSWORD=admin
+      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+
   # Tracking Service
   tracking-service:
     build: ./services/tracking-service
