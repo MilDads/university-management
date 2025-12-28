@@ -18,25 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  postgres-tracking:
-    image: postgres:18.1
-    container_name: postgres-tracking
-    environment:
-      POSTGRES_DB: tracking_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5440:5432"
-    volumes:
-      - postgres-tracking-data:/var/lib/postgresql
-    networks:
-      - microservices-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Redis
   redis:
     image: redis:8.4.0
@@ -106,6 +87,39 @@ services:
         condition: service_healthy
     networks:
       - microservices-network
+
+  # User Service
+    postgres-user:
+    image: postgres:16
+    container_name: postgres-user
+    restart: always
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-user-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service:
+    build: ./services/user-service
+    container_name: user-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      postgres-user:
+        condition: service_healthy
+      rabbitmq-broker:
+        condition: service_healthy
+    restart: unless-stopped
 
   # Resource Service
   resource-service:
@@ -177,59 +191,10 @@ services:
     networks:
       - microservices-network
 
-  payment-service:
-    build: ./services/payment-service
-    container_name: payment-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DB_URL=jdbc:postgresql://postgres:5432/paymentdb
-      - DB_USERNAME=payment_user
-      - DB_PASSWORD=payment_pass
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USERNAME=admin
-      - RABBITMQ_PASSWORD=admin
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    networks:
-      - microservices-network
-
-
-  # Tracking Service
-  tracking-service:
-    build: ./services/tracking-service
-    container_name: tracking-service
-    environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - DB_URL=jdbc:postgresql://postgres-tracking:5432/tracking_db
-      - DB_USERNAME=postgres
-      - DB_PASSWORD=postgres
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_PORT=5672
-      - RABBITMQ_USERNAME=admin
-      - RABBITMQ_PASSWORD=admin
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - INTERNAL_API_SECRET=${INTERNAL_API_SECRET}
-    depends_on:
-      postgres-tracking:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - microservices-network
-      
 networks:
   microservices-network:
     driver: bridge
 
 volumes:
   postgres_data:
-  postgres-tracking-data:
-    driver: local
+  

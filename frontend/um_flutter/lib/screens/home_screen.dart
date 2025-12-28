@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:um_flutter/screens/placeholder_screen.dart';
 import '../models/resource.dart';
 import '../providers/app_providers.dart';
 import 'add_resource_screen.dart';
 import 'my_bookings_screen.dart';
 import 'create_booking_screen.dart';
 import 'marketplace_screen.dart';
-import 'tracking_screen.dart';
-import 'my_payments_screen.dart';
+import 'placeholder_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -30,7 +28,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         title: const Text('Resources'),
         actions: [
           PopupMenuButton<String>(
-            // ... (rest of AppBar actions same as before)
+// ... (rest of AppBar actions same as before)
             icon: const Icon(Icons.account_circle),
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -50,7 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               ),
               const PopupMenuDivider(),
-              const PopupMenuItem(
+               const PopupMenuItem(
                 value: 'my_bookings',
                 child: Row(
                   children: [
@@ -112,9 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyBookingsScreen(),
-                  ),
+                  MaterialPageRoute(builder: (context) => const MyBookingsScreen()),
                 );
               },
             ),
@@ -133,20 +129,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.payment),
-              title: const Text('My Payments'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const MyPaymentsScreen(),
-                  ),
-                );
-              },
-            ),
-            const Divider(),
-            ListTile(
               leading: const Icon(Icons.assignment),
               title: const Text('Online Exams'),
               onTap: () {
@@ -157,8 +139,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (context) => const ServicePlaceholderScreen(
                       title: 'Online Exams',
                       icon: Icons.assignment,
-                      description:
-                          'Take and manage your online university exams.',
+                      description: 'Take and manage your online university exams.',
                     ),
                   ),
                 );
@@ -175,8 +156,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (context) => const ServicePlaceholderScreen(
                       title: 'IoT Devices',
                       icon: Icons.sensors,
-                      description:
-                          'View real-time sensor data from campus facilities.',
+                      description: 'View real-time sensor data from campus facilities.',
                     ),
                   ),
                 );
@@ -190,7 +170,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const TrackingScreen(),
+                    builder: (context) => const ServicePlaceholderScreen(
+                      title: 'Shuttle Tracking',
+                      icon: Icons.directions_bus,
+                      description: 'Track university shuttle locations in real-time.',
+                    ),
                   ),
                 );
               },
@@ -207,8 +191,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (context) => const ServicePlaceholderScreen(
                       title: 'Notifications',
                       icon: Icons.notifications,
-                      description:
-                          'Stay updated with university announcements.',
+                      description: 'Stay updated with university announcements.',
                     ),
                   ),
                 );
@@ -225,8 +208,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (context) => const ServicePlaceholderScreen(
                       title: 'User Profile',
                       icon: Icons.person,
-                      description:
-                          'Manage your personal information and settings.',
+                      description: 'Manage your personal information and settings.',
                     ),
                   ),
                 );
@@ -499,8 +481,9 @@ class _ResourceCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) =>
-                              CreateBookingScreen(resource: resource),
+                          builder:
+                              (context) =>
+                                  CreateBookingScreen(resource: resource),
                         ),
                       );
                     },

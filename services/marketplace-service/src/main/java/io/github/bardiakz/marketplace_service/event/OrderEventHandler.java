@@ -28,21 +28,8 @@ public class OrderEventHandler {
         try {
             log.info("Received PaymentCompleted event: {}", event);
 
-            // Extract orderId - handle both Integer and Long
-            Long orderId;
-            Object orderIdObj = event.get("orderId");
-            if (orderIdObj instanceof Integer) {
-                orderId = ((Integer) orderIdObj).longValue();
-            } else if (orderIdObj instanceof Long) {
-                orderId = (Long) orderIdObj;
-            } else if (orderIdObj instanceof Number) {
-                orderId = ((Number) orderIdObj).longValue();
-            } else {
-                throw new IllegalArgumentException("Invalid orderId type: " + orderIdObj.getClass());
-            }
-
-            // Extract paymentId - handle potential null or different types
-            String paymentId = String.valueOf(event.get("paymentId"));
+            Long orderId = ((Number) event.get("orderId")).longValue();
+            String paymentId = (String) event.get("paymentId");
 
             orderService.handlePaymentCompleted(orderId, paymentId);
 
@@ -61,19 +48,7 @@ public class OrderEventHandler {
         try {
             log.info("Received PaymentFailed event: {}", event);
 
-            // Extract orderId - handle both Integer and Long
-            Long orderId;
-            Object orderIdObj = event.get("orderId");
-            if (orderIdObj instanceof Integer) {
-                orderId = ((Integer) orderIdObj).longValue();
-            } else if (orderIdObj instanceof Long) {
-                orderId = (Long) orderIdObj;
-            } else if (orderIdObj instanceof Number) {
-                orderId = ((Number) orderIdObj).longValue();
-            } else {
-                throw new IllegalArgumentException("Invalid orderId type: " + orderIdObj.getClass());
-            }
-
+            Long orderId = ((Number) event.get("orderId")).longValue();
             String reason = (String) event.getOrDefault("reason", "Payment failed");
 
             orderService.handlePaymentFailed(orderId, reason);

@@ -133,6 +133,7 @@ class ApiService {
     }
   }
 
+
   // Resource APIs
   Future<List<Resource>> getResources() async {
     try {
@@ -392,6 +393,51 @@ class ApiService {
     } catch (e) {
       if (e is AuthException || e is ServerException) rethrow;
       throw NetworkException('Error cancelling booking: ${e.toString()}');
+    }
+  }
+// complete register
+  Future<bool> registerWithProfile({
+    required String username,
+    required String password,
+    required String role,
+    required String fullName,
+    required String studentNumber,
+    String? phoneNumber,
+  }) async {
+    try {
+      final authResult = await register(username, password, role);
+      if (!authResult.success) {
+        throw AuthException('unsuccessful register: ${authResult.message}');
+      }
+
+      final profileResponse = await http.post(
+        Uri.parse('$baseUrl/api/profiles'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'email': username,         
+          'role': role,
+          'fullName': fullName,
+          'studentNumber': studentNumber,
+          'phoneNumber': phoneNumber ?? '',
+          'tenantId': 1,              
+        }),
+      ).timeout(const Duration(seconds: 10));
+
+      if (profileResponse.statusCode == 201 || profileResponse.statusCode == 200) {
+        print('register complete');
+        return true;
+      } else {
+        try {
+          final error = jsonDecode(profileResponse.body);
+          throw ServerException(error['error'] ?? 'register failed');
+        } catch (_) {
+          throw ServerException('register failed with code: ${profileResponse.statusCode}');
+        }
+      }
+    } catch (e) {
+      print('register failure: $e');
+      return false;
     }
   }
 }

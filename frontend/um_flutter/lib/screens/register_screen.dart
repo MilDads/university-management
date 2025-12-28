@@ -29,40 +29,44 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
+  if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+  setState(() => _isLoading = true);
 
-    try {
-      await ref
-          .read(authProvider.notifier)
-          .register(
-            _usernameController.text.trim(),
-            _passwordController.text,
-            _selectedRole.value,
-          );
+  try {
+    final success = await ApiService().registerWithProfile(
+      username: _usernameController.text.trim(),
+      password: _passwordController.text.trim(),
+      role: _selectedRole.value,
+      fullName: _fullNameController.text.trim(),
+      studentNumber: _studentNumberController.text.trim(),
+      phoneNumber: _phoneNumberController.text.trim(),
+    );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Registration successful!')),
-        );
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Registration failed: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('registered'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('register failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } finally {
+    if (mounted) {
+      setState(() => _isLoading = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {

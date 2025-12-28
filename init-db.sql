@@ -31,11 +31,3 @@ GRANT ALL PRIVILEGES ON DATABASE marketplacedb TO marketplace_user;
 
 \c marketplacedb;
 GRANT ALL ON SCHEMA public TO marketplace_user;
-
--- Create the paymentdb database
-CREATE DATABASE paymentdb;
-CREATE USER payment_user WITH PASSWORD 'payment_pass';
-GRANT ALL PRIVILEGES ON DATABASE paymentdb TO payment_user;
-
-\c paymentdb;
-GRANT ALL ON SCHEMA public TO payment_user;

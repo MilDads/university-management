@@ -18,10 +18,6 @@ public class RabbitMQConfig {
     public static final String LOCATION_UPDATED_QUEUE = "tracking.location.updated";
     public static final String LOCATION_UPDATED_ROUTING_KEY = "location.updated";
 
-    // Queue names for event listeners
-    public static final String MAINTENANCE_QUEUE_NAME = "tracking.maintenance.queue";
-    public static final String ALERT_QUEUE_NAME = "tracking.alert.queue";
-
     @Bean
     public Exchange locationExchange() {
         return ExchangeBuilder
@@ -44,26 +40,6 @@ public class RabbitMQConfig {
                 .to(locationExchange)
                 .with(LOCATION_UPDATED_ROUTING_KEY)
                 .noargs();
-    }
-
-    /**
-     * Queue for maintenance events from resource service
-     */
-    @Bean
-    public Queue maintenanceQueue() {
-        return QueueBuilder
-                .durable(MAINTENANCE_QUEUE_NAME)
-                .build();
-    }
-
-    /**
-     * Queue for alert events
-     */
-    @Bean
-    public Queue alertQueue() {
-        return QueueBuilder
-                .durable(ALERT_QUEUE_NAME)
-                .build();
     }
 
     /**

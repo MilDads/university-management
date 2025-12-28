@@ -5,9 +5,6 @@ import '../providers/marketplace_providers.dart';
 import '../providers/app_providers.dart';
 import 'my_orders_screen.dart';
 import 'add_product_screen.dart';
-import 'payment_status_screen.dart';
-import 'my_payments_screen.dart';
-import '../services/marketplace_service.dart';
 
 class MarketplaceScreen extends ConsumerWidget {
   const MarketplaceScreen({super.key});
@@ -22,18 +19,6 @@ class MarketplaceScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Marketplace'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.payment),
-            tooltip: 'My Payments',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const MyPaymentsScreen(),
-                ),
-              );
-            },
-          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'My Orders',
@@ -104,6 +89,8 @@ class MarketplaceScreen extends ConsumerWidget {
   }
 }
 
+// Rest of your _ProductCard, _BuyDialog code stays the same...
+
 class _ProductCard extends ConsumerWidget {
   final Product product;
 
@@ -115,60 +102,21 @@ class _ProductCard extends ConsumerWidget {
       builder: (context) => _BuyDialog(product: product),
     );
 
-    if (quantity != null && context.mounted) {
-      // Show loading dialog
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Creating order...'),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
-
+    if (quantity != null) {
       try {
-        // Create order (this triggers payment processing automatically)
-        final order = await ref
+        await ref
             .read(marketplaceServiceProvider)
             .createOrder(product.id, quantity);
-
         if (context.mounted) {
-          // Close loading dialog
-          Navigator.pop(context);
-
-          // Navigate to payment status screen
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PaymentStatusScreen(orderId: order.id),
-            ),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Order placed successfully!')),
           );
-
-          // Refresh products
           ref.invalidate(productsProvider);
         }
       } catch (e) {
         if (context.mounted) {
-          // Close loading dialog
-          Navigator.pop(context);
-
-          // Show error
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to create order: $e'),
-              backgroundColor: Colors.red,
-            ),
+            SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
           );
         }
       }
@@ -212,29 +160,9 @@ class _ProductCard extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Text(
-                  'Stock: ${product.stock}',
-                  style: const TextStyle(fontSize: 10, color: Colors.grey),
-                ),
-                const SizedBox(width: 8),
-                if (!product.active)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade100,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      'Inactive',
-                      style: TextStyle(fontSize: 8, color: Colors.red),
-                    ),
-                  ),
-              ],
+            Text(
+              'Stock: ${product.stock}',
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Row(
@@ -249,7 +177,7 @@ class _ProductCard extends ConsumerWidget {
                 ),
                 IconButton(
                   icon: const Icon(Icons.add_shopping_cart),
-                  onPressed: product.stock > 0 && product.active
+                  onPressed: product.stock > 0
                       ? () => _buyProduct(context, ref)
                       : null,
                 ),
@@ -275,21 +203,13 @@ class _BuyDialogState extends State<_BuyDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final totalAmount = widget.product.price * _quantity;
-
     return AlertDialog(
       title: Text('Buy ${widget.product.name}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Price: \$${widget.product.price.toStringAsFixed(2)}'),
           const SizedBox(height: 16),
-          const Text(
-            'Quantity:',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -297,73 +217,25 @@ class _BuyDialogState extends State<_BuyDialog> {
                 onPressed: _quantity > 1
                     ? () => setState(() => _quantity--)
                     : null,
-                icon: const Icon(Icons.remove_circle_outline),
-                iconSize: 32,
+                icon: const Icon(Icons.remove),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$_quantity',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+              Text(
+                '$_quantity',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               IconButton(
                 onPressed: _quantity < widget.product.stock
                     ? () => setState(() => _quantity++)
                     : null,
-                icon: const Icon(Icons.add_circle_outline),
-                iconSize: 32,
+                icon: const Icon(Icons.add),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Total:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '\$${totalAmount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, size: 20, color: Colors.blue.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Payment will be processed automatically after order creation.',
-                    style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-                  ),
-                ),
-              ],
-            ),
+          Text(
+            'Total: \$${(widget.product.price * _quantity).toStringAsFixed(2)}',
           ),
         ],
       ),
@@ -372,10 +244,9 @@ class _BuyDialogState extends State<_BuyDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        ElevatedButton.icon(
+        ElevatedButton(
           onPressed: () => Navigator.pop(context, _quantity),
-          icon: const Icon(Icons.shopping_cart_checkout),
-          label: const Text('Proceed to Payment'),
+          child: const Text('Buy'),
         ),
       ],
     );
