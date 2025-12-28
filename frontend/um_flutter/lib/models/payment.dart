@@ -27,16 +27,16 @@ class Payment {
 
   factory Payment.fromJson(Map<String, dynamic> json) {
     return Payment(
-      id: json['id'],
-      orderId: json['orderId'],
-      username: json['username'],
+      id: json['id'] as int,
+      orderId: json['orderId'] as int,
+      username: json['username'] as String,
       amount: (json['amount'] as num).toDouble(),
-      paymentMethod: json['paymentMethod'],
-      status: json['status'],
-      transactionId: json['transactionId'],
-      failureReason: json['failureReason'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      paymentMethod: json['paymentMethod'] as String,
+      status: json['status'] as String,
+      transactionId: json['transactionId'] as String?,
+      failureReason: json['failureReason'] as String?,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
   }
 
