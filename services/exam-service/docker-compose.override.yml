@@ -1,4 +1,0 @@
-services:
-  exam-service:
-    ports:
-      - "8087:8087"
