@@ -20,6 +20,12 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
+    @GetMapping("/user/{username}")
+    public ResponseEntity<List<PaymentResponse>> getUserPayments(@PathVariable String username) {
+        List<PaymentResponse> payments = paymentService.getPaymentsByUsername(username);
+        return ResponseEntity.ok(payments);
+    }
+
     @GetMapping("/my-payments")
     public ResponseEntity<?> getMyPayments(
             @RequestHeader(value = "X-User-Id", required = false) String userId) {

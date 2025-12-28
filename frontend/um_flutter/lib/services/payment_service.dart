@@ -117,6 +117,8 @@ class PaymentService {
         throw AuthException('Unable to extract username from token');
       }
 
+      print('DEBUG: Fetching payments for user: $username');
+
       final response = await http
           .get(
             Uri.parse('${ApiService.baseUrl}/api/payments/user/$username'),
@@ -124,15 +126,21 @@ class PaymentService {
           )
           .timeout(const Duration(seconds: 10));
 
+      print('DEBUG: My Payments Response: ${response.statusCode}');
+      print('DEBUG: My Payments Body: ${response.body}');
+
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
+        print('DEBUG: Found ${data.length} payments');
         return data.map((json) => Payment.fromJson(json)).toList();
       } else if (response.statusCode == 401) {
         throw AuthException('Unauthorized');
       } else {
         throw ServerException('Failed to load payments');
       }
-    } catch (e) {
+    } catch (e, stack) {
+      print('ERROR in getMyPayments: $e');
+      print('Stack: $stack');
       if (e is AuthException || e is ServerException) rethrow;
       throw NetworkException('Error loading payments: ${e.toString()}');
     }

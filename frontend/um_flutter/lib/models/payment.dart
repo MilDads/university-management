@@ -26,20 +26,22 @@ class Payment {
   });
 
   factory Payment.fromJson(Map<String, dynamic> json) {
+    final createdAt = DateTime.parse(json['createdAt']);
+    final updatedAt = json['updatedAt'] != null
+        ? DateTime.parse(json['updatedAt'])
+        : createdAt; // Use createdAt if updatedAt is missing
+
     return Payment(
       id: json['id'],
       orderId: json['orderId'],
-      username: json['userId'] ?? json['username'], // Handle both field names
+      username: json['userId'] ?? json['username'],
       amount: (json['amount'] as num).toDouble(),
-      paymentMethod:
-          json['method'] ?? json['paymentMethod'], // Handle both field names
+      paymentMethod: json['method'] ?? json['paymentMethod'],
       status: json['status'],
       transactionId: json['transactionId'],
       failureReason: json['failureReason'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: json['updatedAt'] != null
-          ? DateTime.parse(json['updatedAt'])
-          : DateTime.parse(json['createdAt']),
+      createdAt: createdAt,
+      updatedAt: updatedAt,
     );
   }
 

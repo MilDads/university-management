@@ -86,7 +86,7 @@ public class PaymentService {
     }
 
     public List<PaymentResponse> getMyPayments(String userId) {
-        log.debug("Fetching payments for user: {}", userId);
+        log.debug("Fetching payments for userid: {}", userId);
         return paymentRepository.findByUserId(userId).stream()
                 .map(PaymentResponse::from)
                 .collect(Collectors.toList());
@@ -104,5 +104,12 @@ public class PaymentService {
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found for order"));
         return PaymentResponse.from(payment);
+    }
+
+    public List<PaymentResponse> getPaymentsByUsername(String username) {
+        log.debug("Fetching payments for user: {}", username);
+        return paymentRepository.findByUserId(username).stream()
+                .map(PaymentResponse::from)
+                .collect(Collectors.toList());
     }
 }

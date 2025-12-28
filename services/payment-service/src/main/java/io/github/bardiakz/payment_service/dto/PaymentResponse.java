@@ -13,7 +13,8 @@ public record PaymentResponse(
         PaymentMethod method,
         String transactionId,
         String failureReason,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
 ) {
     public static PaymentResponse from(Payment payment) {
         return new PaymentResponse(
@@ -25,7 +26,8 @@ public record PaymentResponse(
                 payment.getMethod(),
                 payment.getTransactionId(),
                 payment.getFailureReason(),
-                payment.getCreatedAt()
+                payment.getCreatedAt(),
+                payment.getUpdatedAt()
         );
     }
 }
