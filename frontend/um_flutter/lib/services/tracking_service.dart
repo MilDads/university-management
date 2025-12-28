@@ -43,7 +43,9 @@ class TrackingService {
     try {
       final response = await http
           .get(
-            Uri.parse('${ApiService.baseUrl}/api/tracking/shuttles/$id/location'),
+            Uri.parse(
+              '${ApiService.baseUrl}/api/tracking/shuttles/$id/location',
+            ),
             headers: _getHeaders(),
           )
           .timeout(const Duration(seconds: 10));
@@ -92,17 +94,16 @@ class TrackingService {
   }) async {
     try {
       final uri = Uri.parse('${ApiService.baseUrl}/api/tracking/shuttles')
-          .replace(queryParameters: {
-        'vehicleNumber': vehicleNumber,
-        'routeName': routeName,
-        'capacity': capacity.toString(),
-      });
+          .replace(
+            queryParameters: {
+              'vehicleNumber': vehicleNumber,
+              'routeName': routeName,
+              'capacity': capacity.toString(),
+            },
+          );
 
       final response = await http
-          .post(
-            uri,
-            headers: _getHeaders(),
-          )
+          .post(uri, headers: _getHeaders())
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201) {
@@ -121,16 +122,12 @@ class TrackingService {
 
   Future<void> updateShuttleStatus(int id, ShuttleStatus status) async {
     try {
-      final uri = Uri.parse('${ApiService.baseUrl}/api/tracking/shuttles/$id/status')
-          .replace(queryParameters: {
-        'status': status.toString().split('.').last,
-      });
+      final uri = Uri.parse(
+        '${ApiService.baseUrl}/api/tracking/shuttles/$id/status',
+      ).replace(queryParameters: {'status': status.toString().split('.').last});
 
       final response = await http
-          .patch(
-            uri,
-            headers: _getHeaders(),
-          )
+          .patch(uri, headers: _getHeaders())
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {

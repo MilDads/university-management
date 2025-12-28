@@ -55,32 +55,58 @@ public class TrackingService {
                 request.shuttleId(), request.latitude(), request.longitude());
 
         Shuttle shuttle = shuttleRepository.findById(request.shuttleId())
-                .orElseThrow(() -> new RuntimeException("Shuttle not found: " + request.shuttleId()));
+                .orElseThrow(() -> {
+                    log.error("Shuttle not found: {}", request.shuttleId());
+                    return new IllegalArgumentException("Shuttle not found with ID: " + request.shuttleId());
+                });
 
-        // Create location history record
-        Location location = new Location(shuttle, request.latitude(), request.longitude());
-        location.setSpeed(request.speed());
-        location.setHeading(request.heading());
-        location.setAccuracy(request.accuracy());
+        try {
+            // Create location history record
+            Location location = new Location(shuttle, request.latitude(), request.longitude());
+            location.setSpeed(request.speed());
+            location.setHeading(request.heading());
+            location.setAccuracy(request.accuracy());
 
-        entityManager.persist(location);
+            entityManager.persist(location);
 
-        // Update shuttle's current location (denormalized for quick access)
-        shuttle.updateLocation(request.latitude(), request.longitude());
-        shuttleRepository.save(shuttle);
+            // Update shuttle's current location (denormalized for quick access)
+            shuttle.updateLocation(request.latitude(), request.longitude());
+            shuttleRepository.save(shuttle);
 
-        // Cache location in Redis for quick retrieval
-        cacheLocation(shuttle);
+            // Build response first
+            ShuttleLocationResponse response = ShuttleLocationResponse.from(shuttle);
 
-        // Broadcast to WebSocket clients
-        ShuttleLocationResponse response = ShuttleLocationResponse.from(shuttle);
-        broadcastService.broadcastLocationUpdate(response);
+            // Try to cache location in Redis (don't fail if Redis is down)
+            try {
+                cacheLocation(response);
+                log.debug("Location cached successfully in Redis");
+            } catch (Exception e) {
+                log.warn("Failed to cache location in Redis (continuing anyway): {}", e.getMessage());
+            }
 
-        // Publish event to RabbitMQ for other services
-        eventPublisher.publishLocationUpdated(shuttle);
+            // Broadcast to WebSocket clients
+            try {
+                broadcastService.broadcastLocationUpdate(response);
+                log.debug("Location broadcasted to WebSocket clients");
+            } catch (Exception e) {
+                log.warn("Failed to broadcast location via WebSocket: {}", e.getMessage());
+            }
 
-        log.debug("Location updated and broadcasted successfully");
-        return response;
+            // Publish event to RabbitMQ for other services
+            try {
+                eventPublisher.publishLocationUpdated(shuttle);
+                log.debug("Location event published to RabbitMQ");
+            } catch (Exception e) {
+                log.warn("Failed to publish location event to RabbitMQ: {}", e.getMessage());
+            }
+
+            log.info("Location updated successfully for shuttle {}", shuttle.getId());
+            return response;
+
+        } catch (Exception e) {
+            log.error("Error updating location for shuttle {}: {}", request.shuttleId(), e.getMessage(), e);
+            throw new RuntimeException("Failed to update shuttle location: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -102,19 +128,29 @@ public class TrackingService {
         log.debug("Fetching location for shuttle: {}", shuttleId);
 
         // Try cache first
-        String cacheKey = LOCATION_CACHE_PREFIX + shuttleId;
-        ShuttleLocationResponse cached = (ShuttleLocationResponse) redisTemplate.opsForValue().get(cacheKey);
-        if (cached != null) {
-            log.debug("Location found in cache");
-            return cached;
+        try {
+            String cacheKey = LOCATION_CACHE_PREFIX + shuttleId;
+            ShuttleLocationResponse cached = (ShuttleLocationResponse) redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                log.debug("Location found in cache");
+                return cached;
+            }
+        } catch (Exception e) {
+            log.warn("Failed to retrieve from Redis cache: {}", e.getMessage());
         }
 
         // Fall back to database
         Shuttle shuttle = shuttleRepository.findById(shuttleId)
-                .orElseThrow(() -> new RuntimeException("Shuttle not found: " + shuttleId));
+                .orElseThrow(() -> new IllegalArgumentException("Shuttle not found: " + shuttleId));
 
         ShuttleLocationResponse response = ShuttleLocationResponse.from(shuttle);
-        cacheLocation(response);
+
+        // Try to cache for next time
+        try {
+            cacheLocation(response);
+        } catch (Exception e) {
+            log.warn("Failed to cache location: {}", e.getMessage());
+        }
 
         return response;
     }
@@ -137,7 +173,7 @@ public class TrackingService {
         log.info("Registering new shuttle: {}", vehicleNumber);
 
         if (shuttleRepository.findByVehicleNumber(vehicleNumber).isPresent()) {
-            throw new RuntimeException("Shuttle already exists: " + vehicleNumber);
+            throw new IllegalArgumentException("Shuttle already exists with vehicle number: " + vehicleNumber);
         }
 
         Shuttle shuttle = new Shuttle(vehicleNumber, routeName, capacity);
@@ -155,13 +191,17 @@ public class TrackingService {
         log.info("Updating shuttle {} status to {}", shuttleId, status);
 
         Shuttle shuttle = shuttleRepository.findById(shuttleId)
-                .orElseThrow(() -> new RuntimeException("Shuttle not found: " + shuttleId));
+                .orElseThrow(() -> new IllegalArgumentException("Shuttle not found: " + shuttleId));
 
         shuttle.setStatus(status);
         shuttleRepository.save(shuttle);
 
         // Broadcast status change
-        broadcastService.broadcastShuttleStatusChange(shuttleId, status);
+        try {
+            broadcastService.broadcastShuttleStatusChange(shuttleId, status);
+        } catch (Exception e) {
+            log.warn("Failed to broadcast status change: {}", e.getMessage());
+        }
 
         log.info("Shuttle status updated successfully");
     }
@@ -169,12 +209,6 @@ public class TrackingService {
     /**
      * Cache location in Redis
      */
-    private void cacheLocation(Shuttle shuttle) {
-        String cacheKey = LOCATION_CACHE_PREFIX + shuttle.getId();
-        ShuttleLocationResponse response = ShuttleLocationResponse.from(shuttle);
-        cacheLocation(response);
-    }
-
     private void cacheLocation(ShuttleLocationResponse response) {
         String cacheKey = LOCATION_CACHE_PREFIX + response.shuttleId();
         redisTemplate.opsForValue().set(cacheKey, response, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
