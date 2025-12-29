@@ -1,0 +1,16 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    constant_identifier_names: false  # Allow UPPERCASE constants
+    avoid_print: false  # Allow print statements
+    deprecated_member_use: warning  # Deprecations are warnings, not errors
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+  errors:
+    deprecated_member_use: warning
+    unused_import: warning
+    todo: ignore

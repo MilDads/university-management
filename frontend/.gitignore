@@ -1,0 +1,11 @@
+# Build artifacts
+*.apk
+*.aab
+*.ipa
+*.zip
+*.tar.gz
+
+# IDE
+.idea/
+.vscode/
+*.iml

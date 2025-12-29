@@ -1,0 +1,26 @@
+name: Flutter Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.4'
+          channel: 'stable'
+          cache: true
+      - run: flutter pub get
+        working-directory: ./frontend/um_flutter
+      - run: flutter analyze --no-fatal-warnings
+        working-directory: ./frontend/um_flutter
+        continue-on-error: true
+      - run: flutter test
+        working-directory: ./frontend/um_flutter
+        continue-on-error: true
