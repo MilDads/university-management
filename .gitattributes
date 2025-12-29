@@ -1,0 +1,8 @@
+# Always use LF for shell scripts, even on Windows
+*.sh text eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Docker files
+Dockerfile text eol=lf
+docker-compose*.yml text eol=lf
