@@ -26,13 +26,10 @@ class ServerException implements Exception {
 }
 
 class ApiService {
-  // For local development (web/desktop): http://localhost:8080
-  // For Android emulator: http://10.0.2.2:8080
-  // For iOS simulator: http://localhost:8080
-  // For physical device: http://YOUR_COMPUTER_IP:8080 (e.g., http://192.168.1.100:8080)
   static String get baseUrl {
     if (kIsWeb) return 'http://localhost:8080';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8080';
+    if (defaultTargetPlatform == TargetPlatform.android)
+      return 'http://10.0.2.2:8080';
     return 'http://localhost:8080';
   }
 
@@ -56,12 +53,15 @@ class ApiService {
     return headers;
   }
 
-  // Auth APIs
-  Future<LoginResponse> register(
-    String username,
-    String password,
-    String role,
-  ) async {
+  // ==================== Auth APIs (UPDATED) ====================
+
+  Future<LoginResponse> register({
+    required String username,
+    required String password,
+    required String email,
+    String? fullName,
+    String defaultRole = 'STUDENT',
+  }) async {
     try {
       final response = await http
           .post(
@@ -70,14 +70,14 @@ class ApiService {
             body: jsonEncode({
               'username': username,
               'password': password,
-              'role': role,
+              'email': email,
+              'fullName': fullName,
+              'defaultRole': defaultRole,
             }),
           )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        // Registration successful - return success without token
-        // User needs to login separately to get token
         final data = jsonDecode(response.body);
         return LoginResponse(
           success: true,
@@ -88,6 +88,7 @@ class ApiService {
         throw ServerException(error['error'] ?? 'Registration failed');
       }
     } catch (e) {
+      if (e is ServerException) rethrow;
       throw NetworkException('Network error: ${e.toString()}');
     }
   }
@@ -98,20 +99,16 @@ class ApiService {
           .post(
             Uri.parse('$baseUrl/api/auth/login'),
             headers: _getHeaders(),
-            body: jsonEncode({
-              'username': username,
-              'password': password,
-              // Removed 'role' - not needed for login
-            }),
+            body: jsonEncode({'username': username, 'password': password}),
           )
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        _token = data['token'];
+        _token = data['jwt'] ?? data['token'];
         return LoginResponse(
           success: true,
-          token: data['token'],
+          token: _token!,
           username: data['username'],
         );
       } else {
@@ -119,6 +116,7 @@ class ApiService {
         throw AuthException(error['error'] ?? 'Login failed');
       }
     } catch (e) {
+      if (e is AuthException) rethrow;
       if (e.toString().contains('Connection refused') ||
           e.toString().contains('Failed host lookup') ||
           e.toString().contains('Network is unreachable')) {
@@ -368,7 +366,9 @@ class ApiService {
       }
     } catch (e) {
       if (e is AuthException || e is ServerException) rethrow;
-      throw NetworkException('Error loading resource bookings: ${e.toString()}');
+      throw NetworkException(
+        'Error loading resource bookings: ${e.toString()}',
+      );
     }
   }
 

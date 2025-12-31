@@ -1,6 +1,6 @@
+// ==================== screens/home_screen.dart (UPDATED) ====================
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:um_flutter/screens/placeholder_screen.dart';
 import '../models/resource.dart';
 import '../providers/app_providers.dart';
 import 'add_resource_screen.dart';
@@ -9,6 +9,8 @@ import 'create_booking_screen.dart';
 import 'marketplace_screen.dart';
 import 'tracking_screen.dart';
 import 'my_payments_screen.dart';
+import 'profile_screen.dart';
+import 'placeholder_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -22,15 +24,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authProvider);
-    final user = authState.value;
+    final userInfo = ref.watch(currentUserInfoProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resources'),
         actions: [
           PopupMenuButton<String>(
-            // ... (rest of AppBar actions same as before)
             icon: const Icon(Icons.account_circle),
             itemBuilder: (context) => [
               PopupMenuItem(
@@ -39,17 +39,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.username ?? 'User',
+                      userInfo.username,
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      user?.role ?? '',
+                      userInfo.role,
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
+                    if (userInfo.email.isNotEmpty)
+                      Text(
+                        userInfo.email,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 10,
+                        ),
+                      ),
                   ],
                 ),
               ),
               const PopupMenuDivider(),
+              const PopupMenuItem(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person),
+                    SizedBox(width: 8),
+                    Text('Profile'),
+                  ],
+                ),
+              ),
               const PopupMenuItem(
                 value: 'my_bookings',
                 child: Row(
@@ -82,6 +100,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     builder: (context) => const MyBookingsScreen(),
                   ),
                 );
+              } else if (value == 'profile') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
               }
             },
           ),
@@ -92,13 +117,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: EdgeInsets.zero,
           children: [
             UserAccountsDrawerHeader(
-              accountName: Text(user?.username ?? 'User'),
-              accountEmail: Text(user?.role ?? ''),
-              currentAccountPicture: const CircleAvatar(
-                child: Icon(Icons.person, size: 40),
+              accountName: Text(userInfo.fullName ?? userInfo.username),
+              accountEmail: Text(
+                userInfo.email.isEmpty ? userInfo.role : userInfo.email,
+              ),
+              currentAccountPicture: CircleAvatar(
+                child: Text(
+                  userInfo.username[0].toUpperCase(),
+                  style: const TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
               decoration: BoxDecoration(color: Theme.of(context).primaryColor),
             ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileScreen(),
+                  ),
+                );
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.inventory_2),
               title: const Text('Resources'),
@@ -214,24 +261,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ServicePlaceholderScreen(
-                      title: 'User Profile',
-                      icon: Icons.person,
-                      description:
-                          'Manage your personal information and settings.',
-                    ),
-                  ),
-                );
-              },
-            ),
             const Divider(),
             ListTile(
               leading: const Icon(Icons.logout),
@@ -281,7 +310,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           Expanded(child: _buildResourceList()),
         ],
       ),
-      floatingActionButton: user?.isFaculty == true
+      floatingActionButton: userInfo.isFaculty
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final result = await Navigator.push(

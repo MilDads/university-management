@@ -1,9 +1,10 @@
 class User {
   final String username;
   final String token;
-  final String role;
+  String? role;
+  String? email;
 
-  User({required this.username, required this.token, required this.role});
+  User({required this.username, required this.token, role});
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
