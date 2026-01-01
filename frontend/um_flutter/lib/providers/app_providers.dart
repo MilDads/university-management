@@ -183,6 +183,9 @@ class UserInfo {
   bool get isInstructor => profile?.isInstructor ?? role == 'INSTRUCTOR';
   bool get isFaculty => profile?.isFaculty ?? role == 'FACULTY';
   bool get isAdmin => profile?.isAdmin ?? role == 'ADMIN';
+
+  // Helper method to check if profile has loaded
+  bool get hasProfile => profile != null;
 }
 
 // ==================== Resources Provider ====================

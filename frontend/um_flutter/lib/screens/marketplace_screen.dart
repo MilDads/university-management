@@ -7,7 +7,6 @@ import 'my_orders_screen.dart';
 import 'add_product_screen.dart';
 import 'payment_status_screen.dart';
 import 'my_payments_screen.dart';
-import '../services/marketplace_service.dart';
 
 class MarketplaceScreen extends ConsumerWidget {
   const MarketplaceScreen({super.key});
@@ -15,8 +14,7 @@ class MarketplaceScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(productsProvider);
-    final authState = ref.watch(authProvider);
-    final user = authState.value;
+    final userInfo = ref.watch(currentUserInfoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -82,8 +80,8 @@ class MarketplaceScreen extends ConsumerWidget {
           ),
         ),
       ),
-      // FAB for FACULTY users only
-      floatingActionButton: user?.isFaculty == true
+      // FAB for FACULTY users only - ✅ Check userInfo.isFaculty
+      floatingActionButton: userInfo.isFaculty
           ? FloatingActionButton.extended(
               onPressed: () async {
                 final result = await Navigator.push(
@@ -116,7 +114,6 @@ class _ProductCard extends ConsumerWidget {
     );
 
     if (quantity != null && context.mounted) {
-      // Show loading dialog
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -138,32 +135,23 @@ class _ProductCard extends ConsumerWidget {
       );
 
       try {
-        // Create order (this triggers payment processing automatically)
         final order = await ref
             .read(marketplaceServiceProvider)
             .createOrder(product.id, quantity);
 
         if (context.mounted) {
-          // Close loading dialog
           Navigator.pop(context);
-
-          // Navigate to payment status screen
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => PaymentStatusScreen(orderId: order.id),
             ),
           );
-
-          // Refresh products
           ref.invalidate(productsProvider);
         }
       } catch (e) {
         if (context.mounted) {
-          // Close loading dialog
           Navigator.pop(context);
-
-          // Show error
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to create order: $e'),

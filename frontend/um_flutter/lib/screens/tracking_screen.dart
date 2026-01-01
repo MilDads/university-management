@@ -23,8 +23,8 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider).value;
-    final isFaculty = user?.role == 'FACULTY';
+    final userInfo = ref.watch(currentUserInfoProvider);
+    final isFaculty = userInfo.isFaculty;
 
     final shuttlesAsync = _showAllShuttles
         ? ref.watch(allShuttlesProvider)
@@ -780,10 +780,7 @@ class _ShuttleLocationCard extends ConsumerWidget {
                   const SizedBox(width: 4),
                   Text(
                     '${location.latitude.toStringAsFixed(4)}, ${location.longitude.toStringAsFixed(4)}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey.shade600,
-                    ),
+                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
                   ),
                 ],
               ),
@@ -818,8 +815,9 @@ class _ShuttleLocationCard extends ConsumerWidget {
             if (location.lastUpdate != null)
               _DetailRow(
                 label: 'Last Update',
-                value: DateFormat('MMM dd, yyyy HH:mm:ss')
-                    .format(location.lastUpdate!),
+                value: DateFormat(
+                  'MMM dd, yyyy HH:mm:ss',
+                ).format(location.lastUpdate!),
               ),
           ],
         ),
@@ -843,10 +841,12 @@ class _ShuttleLocationCard extends ConsumerWidget {
   }
 
   void _showUpdateLocationDialog(BuildContext context, WidgetRef ref) {
-    final latController =
-        TextEditingController(text: location.latitude.toString());
-    final lngController =
-        TextEditingController(text: location.longitude.toString());
+    final latController = TextEditingController(
+      text: location.latitude.toString(),
+    );
+    final lngController = TextEditingController(
+      text: location.longitude.toString(),
+    );
 
     showDialog(
       context: context,
@@ -861,8 +861,9 @@ class _ShuttleLocationCard extends ConsumerWidget {
                 labelText: 'Latitude',
                 hintText: 'e.g., 40.7128',
               ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
@@ -871,8 +872,9 @@ class _ShuttleLocationCard extends ConsumerWidget {
                 labelText: 'Longitude',
                 hintText: 'e.g., -74.0060',
               ),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
           ],
         ),
@@ -898,7 +900,8 @@ class _ShuttleLocationCard extends ConsumerWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Location updated successfully')),
+                      content: Text('Location updated successfully'),
+                    ),
                   );
                   onLocationUpdate();
                 }
@@ -944,15 +947,17 @@ class _ShuttleLocationCard extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Shuttle status updated to ${newStatus.name}')),
+          SnackBar(
+            content: Text('Shuttle status updated to ${newStatus.name}'),
+          ),
         );
         onStatusChanged();
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -1021,8 +1026,11 @@ class _ShuttleCard extends ConsumerWidget {
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child:
-                      Icon(Icons.directions_bus, color: statusColor, size: 32),
+                  child: Icon(
+                    Icons.directions_bus,
+                    color: statusColor,
+                    size: 32,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1048,8 +1056,10 @@ class _ShuttleCard extends ConsumerWidget {
                   ),
                 ),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -1078,11 +1088,18 @@ class _ShuttleCard extends ConsumerWidget {
                         ),
                       ),
                       const PopupMenuDivider(),
-                      const PopupMenuItem(value: 'active', child: Text('Set Active')),
                       const PopupMenuItem(
-                          value: 'inactive', child: Text('Set Inactive')),
+                        value: 'active',
+                        child: Text('Set Active'),
+                      ),
                       const PopupMenuItem(
-                          value: 'maintenance', child: Text('Set Maintenance')),
+                        value: 'inactive',
+                        child: Text('Set Inactive'),
+                      ),
+                      const PopupMenuItem(
+                        value: 'maintenance',
+                        child: Text('Set Maintenance'),
+                      ),
                     ],
                   ),
               ],
@@ -1173,15 +1190,17 @@ class _ShuttleCard extends ConsumerWidget {
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Shuttle status updated to ${newStatus.name}')),
+          SnackBar(
+            content: Text('Shuttle status updated to ${newStatus.name}'),
+          ),
         );
         onStatusChanged();
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
       }
     }
   }
@@ -1204,15 +1223,17 @@ class _ShuttleCard extends ConsumerWidget {
             TextField(
               controller: latController,
               decoration: const InputDecoration(labelText: 'Latitude'),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: lngController,
               decoration: const InputDecoration(labelText: 'Longitude'),
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
             ),
           ],
         ),
@@ -1238,7 +1259,8 @@ class _ShuttleCard extends ConsumerWidget {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('Location updated successfully')),
+                      content: Text('Location updated successfully'),
+                    ),
                   );
                   onLocationUpdate();
                 }
