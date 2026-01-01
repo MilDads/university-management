@@ -75,7 +75,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   Future<void> login(String username, String password) async {
-    state = const AsyncValue.loading();
+    // Don't set state to loading here, let the UI handle it.
+    // Setting state triggers AuthWrapper to rebuild, which unmounts LoginScreen,
+    // preventing the SnackBar from showing on error.
     try {
       final response = await _apiService.login(username, password);
 
@@ -89,7 +91,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       state = AsyncValue.data(user);
     } catch (e) {
       debugPrint('AuthNotifier.login error: $e');
-      state = AsyncValue.error(e, StackTrace.current);
+      // Don't set state to error, just rethrow so UI can handle it.
+      // state = AsyncValue.error(e, StackTrace.current);
       rethrow;
     }
   }
