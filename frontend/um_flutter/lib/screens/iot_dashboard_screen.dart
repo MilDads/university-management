@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/iot_sensor.dart';
 import '../models/sensor_type.dart';
 import '../providers/iot_providers.dart';
+import '../providers/app_providers.dart';
 import 'sensor_details_screen.dart';
+import 'add_edit_sensor_screen.dart';
 
 class IotDashboardScreen extends ConsumerWidget {
   const IotDashboardScreen({super.key});
@@ -11,6 +13,8 @@ class IotDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final sensorsAsync = ref.watch(sensorsProvider);
+    final userInfo = ref.watch(currentUserInfoProvider);
+    final canManage = userInfo.isAdmin || userInfo.isFaculty;
 
     return Scaffold(
       appBar: AppBar(
@@ -70,6 +74,20 @@ class IotDashboardScreen extends ConsumerWidget {
           ),
         ),
       ),
+      floatingActionButton: canManage
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddEditSensorScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Sensor'),
+            )
+          : null,
     );
   }
 }

@@ -3,6 +3,7 @@ package io.github.bardiakz.iot_service.controller;
 import io.github.bardiakz.iot_service.dto.SensorDTO;
 import io.github.bardiakz.iot_service.dto.SensorReadingDTO;
 import io.github.bardiakz.iot_service.dto.SensorRegisterRequest;
+import io.github.bardiakz.iot_service.dto.SensorUpdateRequest;
 import io.github.bardiakz.iot_service.service.SensorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +25,14 @@ public class SensorController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('FACULTY')")
     public ResponseEntity<SensorDTO> registerSensor(@RequestBody SensorRegisterRequest request) {
         return ResponseEntity.ok(sensorService.registerSensor(request));
+    }
+
+    @PutMapping("/{sensorId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('FACULTY')")
+    public ResponseEntity<SensorDTO> updateSensor(
+            @PathVariable String sensorId,
+            @RequestBody SensorUpdateRequest request) {
+        return ResponseEntity.ok(sensorService.updateSensor(sensorId, request));
     }
 
     @GetMapping

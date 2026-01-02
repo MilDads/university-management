@@ -3,6 +3,7 @@ package io.github.bardiakz.iot_service.service;
 import io.github.bardiakz.iot_service.dto.SensorDTO;
 import io.github.bardiakz.iot_service.dto.SensorReadingDTO;
 import io.github.bardiakz.iot_service.dto.SensorRegisterRequest;
+import io.github.bardiakz.iot_service.dto.SensorUpdateRequest;
 import io.github.bardiakz.iot_service.entity.Sensor;
 import io.github.bardiakz.iot_service.entity.SensorReading;
 import io.github.bardiakz.iot_service.repository.SensorReadingRepository;
@@ -48,6 +49,22 @@ public class SensorService {
         sensor.setType(request.getType());
         sensor.setLocation(request.getLocation());
         sensor.setUnit(request.getUnit());
+
+        Sensor saved = sensorRepository.save(sensor);
+        return mapToDTO(saved);
+    }
+
+    @Transactional
+    @CacheEvict(value = "sensors", key = "#sensorId")
+    public SensorDTO updateSensor(String sensorId, SensorUpdateRequest request) {
+        Sensor sensor = sensorRepository.findBySensorId(sensorId)
+                .orElseThrow(() -> new RuntimeException("Sensor not found: " + sensorId));
+
+        if (request.getName() != null) sensor.setName(request.getName());
+        if (request.getType() != null) sensor.setType(request.getType());
+        if (request.getLocation() != null) sensor.setLocation(request.getLocation());
+        if (request.getUnit() != null) sensor.setUnit(request.getUnit());
+        if (request.getActive() != null) sensor.setActive(request.getActive());
 
         Sensor saved = sensorRepository.save(sensor);
         return mapToDTO(saved);

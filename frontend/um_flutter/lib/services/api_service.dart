@@ -470,6 +470,79 @@ class ApiService {
       throw NetworkException('Error loading sensor readings: ${e.toString()}');
     }
   }
+
+  Future<IotSensor> createSensor({
+    required String sensorId,
+    required String name,
+    required String type,
+    required String location,
+    required String unit,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/iot/sensors/register'),
+            headers: _getHeaders(requiresAuth: true),
+            body: jsonEncode({
+              'sensorId': sensorId,
+              'name': name,
+              'type': type,
+              'location': location,
+              'unit': unit,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return IotSensor.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 401) {
+        throw AuthException('Unauthorized - please login again');
+      } else {
+        final error = jsonDecode(response.body);
+        throw ServerException(error['error'] ?? 'Failed to create sensor');
+      }
+    } catch (e) {
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error creating sensor: ${e.toString()}');
+    }
+  }
+
+  Future<IotSensor> updateSensor(
+    String sensorId, {
+    String? name,
+    String? type,
+    String? location,
+    String? unit,
+    bool? active,
+  }) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/api/iot/sensors/$sensorId'),
+            headers: _getHeaders(requiresAuth: true),
+            body: jsonEncode({
+              if (name != null) 'name': name,
+              if (type != null) 'type': type,
+              if (location != null) 'location': location,
+              if (unit != null) 'unit': unit,
+              if (active != null) 'active': active,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        return IotSensor.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 401) {
+        throw AuthException('Unauthorized - please login again');
+      } else {
+        final error = jsonDecode(response.body);
+        throw ServerException(error['error'] ?? 'Failed to update sensor');
+      }
+    } catch (e) {
+      if (e is AuthException || e is ServerException) rethrow;
+      throw NetworkException('Error updating sensor: ${e.toString()}');
+    }
+  }
 }
 
 class LoginResponse {

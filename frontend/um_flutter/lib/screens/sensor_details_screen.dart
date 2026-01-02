@@ -6,6 +6,8 @@ import '../models/iot_sensor.dart';
 import '../models/sensor_reading.dart';
 import '../models/sensor_type.dart';
 import '../providers/iot_providers.dart';
+import '../providers/app_providers.dart';
+import 'add_edit_sensor_screen.dart';
 
 class SensorDetailsScreen extends ConsumerWidget {
   final String sensorId;
@@ -16,6 +18,8 @@ class SensorDetailsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final sensorAsync = ref.watch(sensorProvider(sensorId));
     final readingsAsync = ref.watch(sensorReadingsProvider(sensorId));
+    final userInfo = ref.watch(currentUserInfoProvider);
+    final canManage = userInfo.isAdmin || userInfo.isFaculty;
 
     return Scaffold(
       appBar: AppBar(
@@ -28,6 +32,20 @@ class SensorDetailsScreen extends ConsumerWidget {
               ref.invalidate(sensorReadingsProvider(sensorId));
             },
           ),
+          if (canManage)
+            IconButton(
+              icon: const Icon(Icons.edit),
+              onPressed: () {
+                sensorAsync.whenData((sensor) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddEditSensorScreen(sensor: sensor),
+                    ),
+                  );
+                });
+              },
+            ),
         ],
       ),
       body: sensorAsync.when(
