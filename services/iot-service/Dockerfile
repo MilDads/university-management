@@ -22,5 +22,5 @@ RUN --mount=type=cache,target=/root/.gradle,id=gradle-cache,sharing=locked \
 FROM eclipse-temurin:25-jre-alpine
 WORKDIR /app
 COPY --from=build /app/build/libs/*.jar app.jar
-EXPOSE 8080
+EXPOSE 8089
 ENTRYPOINT ["java", "-jar", "app.jar"]
