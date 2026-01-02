@@ -47,3 +47,11 @@ GRANT ALL PRIVILEGES ON DATABASE paymentdb TO payment_user;
 
 \c paymentdb;
 GRANT ALL ON SCHEMA public TO payment_user;
+
+-- IoT Service Database
+CREATE DATABASE iotdb;
+CREATE USER iot_user WITH ENCRYPTED PASSWORD 'iot_pass';
+GRANT ALL PRIVILEGES ON DATABASE iotdb TO iot_user;
+
+\c iotdb
+GRANT ALL ON SCHEMA public TO iot_user;

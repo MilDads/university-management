@@ -128,7 +128,7 @@ public class GatewayConfig {
 
                 // IoT Service - Protected
                 .route("iot-service", r -> r
-                        .path("/api/iot/**")
+                        .path("/api/iot/**", "/ws/iot/**")
                         .filters(f -> f
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("iotServiceCircuitBreaker"))
