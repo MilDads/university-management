@@ -55,3 +55,10 @@ GRANT ALL PRIVILEGES ON DATABASE iotdb TO iot_user;
 
 \c iotdb
 GRANT ALL ON SCHEMA public TO iot_user;
+
+-- Exam Service Database
+CREATE DATABASE examdb;
+CREATE USER exam_user WITH PASSWORD 'exam_pass';
+GRANT ALL PRIVILEGES ON DATABASE examdb TO exam_user;
+\c examdb
+GRANT ALL ON SCHEMA public TO exam_user;
