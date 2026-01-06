@@ -43,4 +43,32 @@ public class Question {
         SHORT_ANSWER,
         ESSAY
     }
+
+    // Constructors
+    public Question() {}
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Exam getExam() { return exam; }
+    public void setExam(Exam exam) { this.exam = exam; }
+
+    public String getText() { return text; }
+    public void setText(String text) { this.text = text; }
+
+    public QuestionType getType() { return type; }
+    public void setType(QuestionType type) { this.type = type; }
+
+    public List<String> getOptions() { return options; }
+    public void setOptions(List<String> options) { this.options = options; }
+
+    public String getCorrectAnswer() { return correctAnswer; }
+    public void setCorrectAnswer(String correctAnswer) { this.correctAnswer = correctAnswer; }
+
+    public Integer getMarks() { return marks; }
+    public void setMarks(Integer marks) { this.marks = marks; }
+
+    public Integer getOrderNumber() { return orderNumber; }
+    public void setOrderNumber(Integer orderNumber) { this.orderNumber = orderNumber; }
 }

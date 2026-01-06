@@ -1,7 +1,6 @@
 package io.github.bardiakz.exam_service.entity;
 
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,4 +51,41 @@ public class Submission {
         SUBMITTED,
         GRADED
     }
+
+    // Constructors
+    public Submission() {}
+
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public Long getExamId() { return examId; }
+    public void setExamId(Long examId) { this.examId = examId; }
+
+    public String getStudentId() { return studentId; }
+    public void setStudentId(String studentId) { this.studentId = studentId; }
+
+    public List<Answer> getAnswers() { return answers; }
+    public void setAnswers(List<Answer> answers) { this.answers = answers; }
+
+    public LocalDateTime getSubmittedAt() { return submittedAt; }
+    public void setSubmittedAt(LocalDateTime submittedAt) { this.submittedAt = submittedAt; }
+
+    public SubmissionStatus getStatus() { return status; }
+    public void setStatus(SubmissionStatus status) { this.status = status; }
+
+    public Integer getTotalScore() { return totalScore; }
+    public void setTotalScore(Integer totalScore) { this.totalScore = totalScore; }
+
+    public Integer getObtainedScore() { return obtainedScore; }
+    public void setObtainedScore(Integer obtainedScore) { this.obtainedScore = obtainedScore; }
+
+    public LocalDateTime getGradedAt() { return gradedAt; }
+    public void setGradedAt(LocalDateTime gradedAt) { this.gradedAt = gradedAt; }
+
+    public String getFeedback() { return feedback; }
+    public void setFeedback(String feedback) { this.feedback = feedback; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

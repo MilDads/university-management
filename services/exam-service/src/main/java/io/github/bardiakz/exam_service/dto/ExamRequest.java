@@ -31,4 +31,27 @@ public class ExamRequest {
     @NotNull(message = "Questions are required")
     @Size(min = 1, message = "Exam must have at least one question")
     private List<QuestionDto> questions;
+
+    public ExamRequest() {}
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+
+    public LocalDateTime getStartTime() { return startTime; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+
+    public LocalDateTime getEndTime() { return endTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+
+    public Integer getTotalMarks() { return totalMarks; }
+    public void setTotalMarks(Integer totalMarks) { this.totalMarks = totalMarks; }
+
+    public List<QuestionDto> getQuestions() { return questions; }
+    public void setQuestions(List<QuestionDto> questions) { this.questions = questions; }
 }
