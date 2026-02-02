@@ -62,3 +62,11 @@ CREATE USER exam_user WITH PASSWORD 'exam_pass';
 GRANT ALL PRIVILEGES ON DATABASE examdb TO exam_user;
 \c examdb
 GRANT ALL ON SCHEMA public TO exam_user;
+
+-- Notification Database
+CREATE DATABASE notificationdb;
+CREATE USER notification_user WITH PASSWORD 'notification_pass';
+GRANT ALL PRIVILEGES ON DATABASE notificationdb TO notification_user;
+
+\c notificationdb
+GRANT ALL ON SCHEMA public TO notification_user;

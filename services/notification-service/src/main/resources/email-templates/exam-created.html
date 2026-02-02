@@ -1,0 +1,34 @@
+{{SUBJECT:New Exam Scheduled - {{examTitle}}}}
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #1168bd; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .exam-details { background-color: white; padding: 15px; margin: 15px 0; border-left: 4px solid #1168bd; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>New Exam Scheduled</h1>
+        </div>
+        <div class="content">
+            <p>A new exam has been scheduled for you.</p>
+            <div class="exam-details">
+                <p><strong>Exam:</strong> {{examTitle}}</p>
+                <p><strong>Scheduled Date:</strong> {{scheduledAt}}</p>
+                <p><strong>Duration:</strong> {{duration}} minutes</p>
+            </div>
+            <p>Please make sure to prepare and be available at the scheduled time.</p>
+            <p>Best regards,<br>University Exam Team</p>
+        </div>
+        <div class="footer">
+            <p>© 2026 University Management System. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
