@@ -76,11 +76,11 @@ public class FallbackController {
     }
 
     @GetMapping("/notification")
-    public ResponseEntity<?> notificationFallback() {
+    public ResponseEntity<Map<String, String>> notificationFallback() {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of(
-                        "error", "Notification Service is currently unavailable",
-                        "message", "Please try again later"
+                        "error", "Notification Service Unavailable",
+                        "message", "The notification service is temporarily unavailable. Your notifications will be sent when the service recovers."
                 ));
     }
 

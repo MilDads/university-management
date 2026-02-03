@@ -40,6 +40,10 @@ public class GatewayConfig {
     @Value("${TRACKING_SERVICE_URL:http://localhost:8090}")
     private String trackingServiceUrl;
 
+    // IMPORTANT: Internal API Secret for secure service-to-service communication
+    @Value("${INTERNAL_API_SECRET}")
+    private String internalApiSecret;
+
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
                                            JwtAuthenticationFilter jwtFilter) {
@@ -117,16 +121,19 @@ public class GatewayConfig {
                         )
                         .uri(examServiceUrl))
 
-                // Notification Service - Protected
+                // Notification Service - Protected with Internal API Secret
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
-                                .circuitBreaker(config -> config.setName("notificationServiceCircuitBreaker"))
+                                // CRITICAL: Add Internal API Secret header for service-to-service auth
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
+                                .circuitBreaker(config -> config
+                                        .setName("notificationServiceCircuitBreaker")
+                                        .setFallbackUri("forward:/fallback/notification"))
                         )
                         .uri(notificationServiceUrl))
 
-                // IoT Service - Protected
                 // IoT Service - Protected
                 .route("iot-service", r -> r
                         .path("/api/iot/**", "/ws/iot/**")
