@@ -16,10 +16,7 @@ class NotificationBadge extends ConsumerWidget {
       data: (count) {
         return Stack(
           children: [
-            IconButton(
-              icon: const Icon(Icons.notifications),
-              onPressed: onTap,
-            ),
+            IconButton(icon: const Icon(Icons.notifications), onPressed: onTap),
             if (count > 0)
               Positioned(
                 right: 8,

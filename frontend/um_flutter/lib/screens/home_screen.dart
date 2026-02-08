@@ -13,6 +13,7 @@ import 'profile_screen.dart';
 import 'placeholder_screen.dart';
 import 'iot_dashboard_screen.dart';
 import 'notifications_screen.dart';
+import 'exam_list_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -215,12 +216,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const ServicePlaceholderScreen(
-                      title: 'Online Exams',
-                      icon: Icons.assignment,
-                      description:
-                          'Take and manage your online university exams.',
-                    ),
+                    builder: (context) => const ExamListScreen(),
                   ),
                 );
               },

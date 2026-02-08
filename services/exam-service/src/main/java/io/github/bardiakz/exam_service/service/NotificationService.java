@@ -1,7 +1,6 @@
 package io.github.bardiakz.exam_service.service;
 
-import io.github.bardiakz.exam_service.event.EventPublisher;
-import io.github.bardiakz.exam_service.event.ExamStartedEvent;
+import io.github.bardiakz.exam_service.event.*;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +29,24 @@ public class NotificationService {
         log.info("Successfully sent exam start notification for exam ID: {}", event.examId());
     }
 
+    @CircuitBreaker(name = "notificationService", fallbackMethod = "notifyExamCreatedFallback")
+    public void notifyExamCreated(ExamCreatedEvent event) {
+        log.info("Attempting to send exam created notification for exam ID: {}", event.examId());
+        eventPublisher.publishExamCreatedEvent(event);
+    }
+
+    @CircuitBreaker(name = "notificationService", fallbackMethod = "notifyExamSubmittedFallback")
+    public void notifyExamSubmitted(ExamSubmittedEvent event) {
+        log.info("Attempting to send exam submitted notification for submission ID: {}", event.submissionId());
+        eventPublisher.publishExamSubmittedEvent(event);
+    }
+
+    @CircuitBreaker(name = "notificationService", fallbackMethod = "notifyExamGradedFallback")
+    public void notifyExamGraded(ExamGradedEvent event) {
+        log.info("Attempting to send exam graded notification for submission ID: {}", event.submissionId());
+        eventPublisher.publishExamGradedEvent(event);
+    }
+
     /**
      * Fallback method when circuit breaker is open or service fails.
      * Logs the failure and allows the system to continue.
@@ -42,10 +59,17 @@ public class NotificationService {
                 event.examId(), throwable.getMessage());
         log.info("Exam {} will proceed without notification. Notification will be retried when service recovers.",
                 event.examId());
+    }
 
-        // In production, you might want to:
-        // 1. Store failed notifications in a database for retry
-        // 2. Send alert to monitoring system
-        // 3. Queue notification for batch retry later
+    private void notifyExamCreatedFallback(ExamCreatedEvent event, Throwable throwable) {
+        log.warn("Fallback: Failed to publish ExamCreatedEvent for exam {}: {}", event.examId(), throwable.getMessage());
+    }
+
+    private void notifyExamSubmittedFallback(ExamSubmittedEvent event, Throwable throwable) {
+        log.warn("Fallback: Failed to publish ExamSubmittedEvent for submission {}: {}", event.submissionId(), throwable.getMessage());
+    }
+
+    private void notifyExamGradedFallback(ExamGradedEvent event, Throwable throwable) {
+        log.warn("Fallback: Failed to publish ExamGradedEvent for submission {}: {}", event.submissionId(), throwable.getMessage());
     }
 }

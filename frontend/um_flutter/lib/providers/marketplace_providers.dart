@@ -15,7 +15,9 @@ final productsProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
   return service.getProducts();
 });
 
-final myOrdersProvider = FutureProvider.autoDispose<List<MarketOrder>>((ref) async {
+final myOrdersProvider = FutureProvider.autoDispose<List<MarketOrder>>((
+  ref,
+) async {
   final service = ref.watch(marketplaceServiceProvider);
   return service.getMyOrders();
 });

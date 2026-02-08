@@ -27,7 +27,7 @@ public class ExamController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'FACULTY')")
     public ResponseEntity<ExamResponse> createExam(
             @Valid @RequestBody ExamRequest request,
             Authentication authentication) {
@@ -40,7 +40,7 @@ public class ExamController {
     }
 
     @PostMapping("/{examId}/publish")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'FACULTY')")
     public ResponseEntity<ExamResponse> publishExam(
             @PathVariable Long examId,
             Authentication authentication) {
@@ -72,7 +72,7 @@ public class ExamController {
     }
 
     @GetMapping("/instructor/my-exams")
-    @PreAuthorize("hasRole('INSTRUCTOR')")
+    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'FACULTY')")
     public ResponseEntity<List<ExamResponse>> getMyExams(Authentication authentication) {
         String instructorId = authentication.getName();
         log.info("Fetching all exams for instructor {}", instructorId);

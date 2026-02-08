@@ -86,8 +86,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
                 final filteredNotifications = _selectedFilter == null
                     ? notifications
                     : notifications
-                        .where((n) => n.status == _selectedFilter)
-                        .toList();
+                          .where((n) => n.status == _selectedFilter)
+                          .toList();
 
                 if (filteredNotifications.isEmpty) {
                   return Center(
@@ -234,9 +234,8 @@ class _NotificationCard extends StatelessWidget {
           // Show notification details dialog
           showDialog(
             context: context,
-            builder: (context) => _NotificationDetailsDialog(
-              notification: notification,
-            ),
+            builder: (context) =>
+                _NotificationDetailsDialog(notification: notification),
           );
         },
         child: Padding(
@@ -247,8 +246,9 @@ class _NotificationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _getColorForStatus(notification.status)
-                      .withValues(alpha: 0.1),
+                  color: _getColorForStatus(
+                    notification.status,
+                  ).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -267,9 +267,7 @@ class _NotificationCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             notification.subject,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(
                                   fontWeight: notification.isSent
                                       ? FontWeight.normal
@@ -286,8 +284,9 @@ class _NotificationCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: _getColorForStatus(notification.status)
-                                .withValues(alpha: 0.1),
+                            color: _getColorForStatus(
+                              notification.status,
+                            ).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -304,18 +303,18 @@ class _NotificationCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       _formatDate(notification.createdAt),
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.grey,
-                          ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                     ),
                     if (notification.retryCount > 0) ...[
                       const SizedBox(height: 4),
                       Text(
                         'Retried ${notification.retryCount} time(s)',
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.orange,
-                              fontSize: 11,
-                            ),
+                          color: Colors.orange,
+                          fontSize: 11,
+                        ),
                       ),
                     ],
                   ],
@@ -349,22 +348,19 @@ class _NotificationDetailsDialog extends StatelessWidget {
               value: notification.type.replaceAll('_', ' '),
             ),
             _DetailRow(label: 'Status', value: notification.status),
-            _DetailRow(
-              label: 'Recipient',
-              value: notification.recipientEmail,
-            ),
+            _DetailRow(label: 'Recipient', value: notification.recipientEmail),
             _DetailRow(
               label: 'Created',
-              value: DateFormat('MMM dd, yyyy HH:mm').format(
-                notification.createdAt,
-              ),
+              value: DateFormat(
+                'MMM dd, yyyy HH:mm',
+              ).format(notification.createdAt),
             ),
             if (notification.sentAt != null)
               _DetailRow(
                 label: 'Sent',
-                value: DateFormat('MMM dd, yyyy HH:mm').format(
-                  notification.sentAt!,
-                ),
+                value: DateFormat(
+                  'MMM dd, yyyy HH:mm',
+                ).format(notification.sentAt!),
               ),
             if (notification.retryCount > 0)
               _DetailRow(
@@ -407,12 +403,7 @@ class _DetailRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontSize: 14),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 14))),
         ],
       ),
     );
