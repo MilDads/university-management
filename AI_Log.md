@@ -737,3 +737,48 @@ Microservices  Stay stateless and trust Gateway
 Redis  Stores blacklisted tokens
 Saga Pattern  Internal events bypass JWT; external calls are secured at the edge
 ---
+
+
+**Question:**
+```
+How can I design a product management system for the Marketplace service?
+```
+
+**Response:**
+To design a product management system for the Marketplace service:
+
+Create a Product Service: This service will handle the creation, updating, deletion, and retrieval of products. 
+
+Use a Database: Store product information like name, price, category, and description in a database (such as PostgreSQL). 
+
+Implement CRUD Operations: Create endpoints for Create (POST), Read (GET), Update (PUT), and Delete (DELETE) operations for products. 
+
+Use Validation: Ensure that the data sent by the user is valid, e.g., check if price is positive and required fields are present. ✅
+
+Implement Searching and Filtering: Allow users to search and filter products by name, category, or price. 🔍
+
+Implement Searching and Filtering: Allow users to search and filter products by name, category, or price.
+---
+
+**Question:**
+```
+What should be the best practice for securing user authentication in the Marketplace service? 🔒
+```
+
+**Response:**
+To secure user authentication:
+
+Use JWT (JSON Web Tokens) for user authentication. 🔑
+
+Create an Auth Service: This service will handle login and token generation. 
+
+Token-Based Authentication: After the user logs in, generate a JWT containing the user’s identity and roles, then send this token to the user.
+
+JWT Validation: The API Gateway will validate the JWT in each request to ensure the user is authorized to access specific resources. 
+
+Encrypt User Data: Store passwords securely using hash algorithms like bcrypt or PBKDF2. 🔐
+
+Use HTTPS: Ensure all communication between the client and server is encrypted using HTTPS to prevent data interception. 🌐
+
+Implement Searching and Filtering: Allow users to search and filter products by name, category, or price.
+---
