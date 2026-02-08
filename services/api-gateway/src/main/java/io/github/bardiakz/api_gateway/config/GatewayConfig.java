@@ -1,6 +1,8 @@
 package io.github.bardiakz.api_gateway.config;
 
 import io.github.bardiakz.api_gateway.filter.JwtAuthenticationFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
@@ -9,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class GatewayConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(GatewayConfig.class);
 
     @Value("${AUTH_SERVICE_URL:http://localhost:8081}")
     private String authServiceUrl;
@@ -47,6 +51,13 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder,
                                            JwtAuthenticationFilter jwtFilter) {
+
+        // Log the internal secret on startup (first 10 chars only for security)
+        logger.info("Internal API Secret configured: {}...",
+                internalApiSecret != null && internalApiSecret.length() > 10
+                        ? internalApiSecret.substring(0, 10)
+                        : "NOT SET");
+
         return builder.routes()
                 // Auth Service - Public (no JWT filter)
                 .route("auth-service", r -> r
@@ -62,15 +73,18 @@ public class GatewayConfig {
                 .route("user-profiles", r -> r
                         .path("/api/profiles/**")
                         .filters(f -> f
+                                // Add internal secret FIRST, before JWT filter
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("userServiceCircuitBreaker"))
                         )
                         .uri(userServiceUrl))
 
-                // User Service - Protected (kept for backwards compatibility)
+                // User Service - Protected
                 .route("user-service", r -> r
                         .path("/api/users/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("userServiceCircuitBreaker"))
                         )
@@ -80,6 +94,7 @@ public class GatewayConfig {
                 .route("resource-service", r -> r
                         .path("/api/resources/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("resourceServiceCircuitBreaker"))
                         )
@@ -89,6 +104,7 @@ public class GatewayConfig {
                 .route("booking-service", r -> r
                         .path("/api/bookings/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("bookingServiceCircuitBreaker"))
                         )
@@ -98,6 +114,7 @@ public class GatewayConfig {
                 .route("marketplace-service", r -> r
                         .path("/api/marketplace/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("marketplaceServiceCircuitBreaker"))
                         )
@@ -107,6 +124,7 @@ public class GatewayConfig {
                 .route("payment-service", r -> r
                         .path("/api/payments/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("paymentServiceCircuitBreaker"))
                         )
@@ -116,6 +134,7 @@ public class GatewayConfig {
                 .route("exam-service", r -> r
                         .path("/api/exams/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("examServiceCircuitBreaker"))
                         )
@@ -125,9 +144,9 @@ public class GatewayConfig {
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
-                                .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
-                                // CRITICAL: Add Internal API Secret header for service-to-service auth
+                                // CRITICAL: Add Internal API Secret BEFORE JWT filter
                                 .addRequestHeader("X-Internal-Secret", internalApiSecret)
+                                .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config
                                         .setName("notificationServiceCircuitBreaker")
                                         .setFallbackUri("forward:/fallback/notification"))
@@ -138,6 +157,7 @@ public class GatewayConfig {
                 .route("iot-service", r -> r
                         .path("/api/iot/**", "/ws/iot/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config
                                         .setName("iotServiceCircuitBreaker")
@@ -149,6 +169,7 @@ public class GatewayConfig {
                 .route("tracking-service", r -> r
                         .path("/api/tracking/**")
                         .filters(f -> f
+                                .addRequestHeader("X-Internal-Secret", internalApiSecret)
                                 .filter(jwtFilter.apply(new JwtAuthenticationFilter.Config()))
                                 .circuitBreaker(config -> config.setName("trackingServiceCircuitBreaker"))
                         )

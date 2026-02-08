@@ -2,6 +2,7 @@ class Notification {
   final int id;
   final String recipientEmail;
   final String subject;
+  final String body;
   final String type;
   final String status;
   final DateTime createdAt;
@@ -12,6 +13,7 @@ class Notification {
     required this.id,
     required this.recipientEmail,
     required this.subject,
+    required this.body,
     required this.type,
     required this.status,
     required this.createdAt,
@@ -21,14 +23,17 @@ class Notification {
 
   factory Notification.fromJson(Map<String, dynamic> json) {
     return Notification(
-      id: json['id'],
-      recipientEmail: json['recipientEmail'],
-      subject: json['subject'],
-      type: json['type'],
-      status: json['status'],
-      createdAt: DateTime.parse(json['createdAt']),
-      sentAt: json['sentAt'] != null ? DateTime.parse(json['sentAt']) : null,
-      retryCount: json['retryCount'],
+      id: json['id'] as int,
+      recipientEmail: json['recipientEmail'] as String,
+      subject: json['subject'] as String,
+      body: json['body'] as String? ?? '', // Handle null with empty string
+      type: json['type'].toString(), // Handles both String and enum
+      status: json['status'].toString(), // Handles both String and enum
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      sentAt: json['sentAt'] != null
+          ? DateTime.parse(json['sentAt'] as String)
+          : null,
+      retryCount: json['retryCount'] as int? ?? 0,
     );
   }
 
@@ -37,6 +42,7 @@ class Notification {
       'id': id,
       'recipientEmail': recipientEmail,
       'subject': subject,
+      'body': body,
       'type': type,
       'status': status,
       'createdAt': createdAt.toIso8601String(),
