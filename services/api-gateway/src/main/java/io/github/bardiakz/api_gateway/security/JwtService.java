@@ -44,6 +44,7 @@ public class JwtService {
 
     private Claims extractAllClaims(String token) {
         try {
+            // Updated for JJWT 0.13.0
             return Jwts.parser()
                     .verifyWith(signingKey)
                     .build()

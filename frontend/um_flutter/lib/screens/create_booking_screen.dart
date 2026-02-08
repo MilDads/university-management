@@ -9,17 +9,18 @@ class CreateBookingScreen extends ConsumerStatefulWidget {
   const CreateBookingScreen({super.key, required this.resource});
 
   @override
-  ConsumerState<CreateBookingScreen> createState() => _CreateBookingScreenState();
+  ConsumerState<CreateBookingScreen> createState() =>
+      _CreateBookingScreenState();
 }
 
 class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   final _formKey = GlobalKey<FormState>();
   final _purposeController = TextEditingController();
-  
+
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
-  
+
   bool _isLoading = false;
 
   @override
@@ -31,7 +32,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
   Future<void> _selectDate(BuildContext context) async {
     final now = DateTime.now();
     final firstDate = DateTime(now.year, now.month, now.day);
-    
+
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
@@ -72,7 +73,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       _startTime.hour,
       _startTime.minute,
     );
-    
+
     final endDateTime = DateTime(
       _selectedDate.year,
       _selectedDate.month,
@@ -81,18 +82,21 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
       _endTime.minute,
     );
 
-    if (endDateTime.isBefore(startDateTime) || endDateTime.isAtSameMomentAs(startDateTime)) {
+    if (endDateTime.isBefore(startDateTime) ||
+        endDateTime.isAtSameMomentAs(startDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('End time must be after start time')),
       );
       return;
     }
-    
+
     // Allow a 5-minute grace period for "now" bookings
-    if (startDateTime.isBefore(DateTime.now().subtract(const Duration(minutes: 5)))) {
-       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Cannot book in the past')),
-      );
+    if (startDateTime.isBefore(
+      DateTime.now().subtract(const Duration(minutes: 5)),
+    )) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Cannot book in the past')));
       return;
     }
 
@@ -116,10 +120,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -147,7 +148,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                       Text(
+                      Text(
                         widget.resource.name,
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
@@ -159,7 +160,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
+
               // Date Selection
               ListTile(
                 title: const Text('Date'),
@@ -172,7 +173,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Existing Bookings Display
               const Text(
                 'Existing Bookings for Selected Date:',
@@ -186,23 +187,35 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                 ),
                 child: Consumer(
                   builder: (context, ref, child) {
-                    final bookingsAsync = ref.watch(bookingsForResourceProvider(widget.resource.id));
-                    
+                    final bookingsAsync = ref.watch(
+                      bookingsForResourceProvider(widget.resource.id),
+                    );
+
                     return bookingsAsync.when(
                       data: (bookings) {
-                        final dailyBookings = bookings.where((b) => 
-                          b.startTime.year == _selectedDate.year &&
-                          b.startTime.month == _selectedDate.month &&
-                          b.startTime.day == _selectedDate.day &&
-                          (b.status == 'CONFIRMED' || b.status == 'PENDING')
-                        ).toList();
-                        
-                        dailyBookings.sort((a, b) => a.startTime.compareTo(b.startTime));
+                        final dailyBookings = bookings
+                            .where(
+                              (b) =>
+                                  b.startTime.year == _selectedDate.year &&
+                                  b.startTime.month == _selectedDate.month &&
+                                  b.startTime.day == _selectedDate.day &&
+                                  (b.status == 'CONFIRMED' ||
+                                      b.status == 'PENDING'),
+                            )
+                            .toList();
+
+                        dailyBookings.sort(
+                          (a, b) => a.startTime.compareTo(b.startTime),
+                        );
 
                         if (dailyBookings.isEmpty) {
                           return const Padding(
                             padding: EdgeInsets.all(16.0),
-                            child: Center(child: Text('No bookings for this date. Available all day.')),
+                            child: Center(
+                              child: Text(
+                                'No bookings for this date. Available all day.',
+                              ),
+                            ),
                           );
                         }
 
@@ -210,20 +223,33 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: dailyBookings.length,
-                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          separatorBuilder: (context, index) =>
+                              const Divider(height: 1),
                           itemBuilder: (context, index) {
-                             final booking = dailyBookings[index];
-                             final start = TimeOfDay.fromDateTime(booking.startTime.toLocal()).format(context);
-                             final end = TimeOfDay.fromDateTime(booking.endTime.toLocal()).format(context);
-                             return ListTile(
-                               dense: true,
-                               leading: const Icon(Icons.block, color: Colors.red),
-                               title: Text(
-                                 '$start - $end',
-                                 style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
-                               ),
-                               subtitle: Text('Booked by ${booking.userRole ?? "User"}'),
-                             );
+                            final booking = dailyBookings[index];
+                            final start = TimeOfDay.fromDateTime(
+                              booking.startTime.toLocal(),
+                            ).format(context);
+                            final end = TimeOfDay.fromDateTime(
+                              booking.endTime.toLocal(),
+                            ).format(context);
+                            return ListTile(
+                              dense: true,
+                              leading: const Icon(
+                                Icons.block,
+                                color: Colors.red,
+                              ),
+                              title: Text(
+                                '$start - $end',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red,
+                                ),
+                              ),
+                              subtitle: Text(
+                                'Booked by ${booking.userRole ?? "User"}',
+                              ),
+                            );
                           },
                         );
                       },
@@ -233,14 +259,17 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                       ),
                       error: (e, _) => Padding(
                         padding: const EdgeInsets.all(16.0),
-                        child: Text('Failed to check availability: $e', style: const TextStyle(color: Colors.red)),
+                        child: Text(
+                          'Failed to check availability: $e',
+                          style: const TextStyle(color: Colors.red),
+                        ),
                       ),
                     );
                   },
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Time Selection
               Row(
                 children: [
@@ -272,7 +301,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Purpose
               TextFormField(
                 controller: _purposeController,
@@ -290,7 +319,7 @@ class _CreateBookingScreenState extends ConsumerState<CreateBookingScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 32),
               ElevatedButton(
                 onPressed: _isLoading ? null : _createBooking,

@@ -2,6 +2,8 @@ package io.github.bardiakz.exam_service.service;
 
 import io.github.bardiakz.exam_service.dto.*;
 import io.github.bardiakz.exam_service.entity.*;
+import io.github.bardiakz.exam_service.event.ExamGradedEvent;
+import io.github.bardiakz.exam_service.event.ExamSubmittedEvent;
 import io.github.bardiakz.exam_service.exception.ExamNotFoundException;
 import io.github.bardiakz.exam_service.repository.ExamRepository;
 import io.github.bardiakz.exam_service.repository.SubmissionRepository;
@@ -20,14 +22,16 @@ public class SubmissionService {
 
     private final SubmissionRepository submissionRepository;
     private final ExamRepository examRepository;
+    private final NotificationService notificationService;
 
-    public SubmissionService(SubmissionRepository submissionRepository, ExamRepository examRepository) {
+    public SubmissionService(SubmissionRepository submissionRepository, ExamRepository examRepository, NotificationService notificationService) {
         this.submissionRepository = submissionRepository;
         this.examRepository = examRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
-    public SubmissionResponse submitExam(SubmissionRequest request, String studentId) {
+    public SubmissionResponse submitExam(SubmissionRequest request, String studentId, String studentEmail) {
         log.info("Student {} submitting exam {}", studentId, request.getExamId());
 
         Exam exam = examRepository.findById(request.getExamId())
@@ -59,6 +63,32 @@ public class SubmissionService {
 
         Submission saved = submissionRepository.save(submission);
         log.info("Submission saved with ID: {} for student {}", saved.getId(), studentId);
+
+        try {
+            ExamSubmittedEvent submittedEvent = new ExamSubmittedEvent(
+                    "ExamSubmitted",
+                    saved.getId(),
+                    exam.getTitle(),
+                    studentEmail,
+                    saved.getSubmittedAt(),
+                    LocalDateTime.now()
+            );
+            notificationService.notifyExamSubmitted(submittedEvent);
+
+            ExamGradedEvent gradedEvent = new ExamGradedEvent(
+                    "ExamGraded",
+                    saved.getId(),
+                    exam.getTitle(),
+                    studentEmail,
+                    (double) saved.getObtainedScore(),
+                    (double) saved.getTotalScore(),
+                    saved.getFeedback() != null ? saved.getFeedback() : "Auto-graded",
+                    LocalDateTime.now()
+            );
+            notificationService.notifyExamGraded(gradedEvent);
+        } catch (Exception e) {
+            log.error("Failed to send notification for submission {}: {}", saved.getId(), e.getMessage());
+        }
 
         return mapToSubmissionResponse(saved);
     }

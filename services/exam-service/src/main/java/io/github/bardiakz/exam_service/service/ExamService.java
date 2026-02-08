@@ -3,7 +3,7 @@ package io.github.bardiakz.exam_service.service;
 import io.github.bardiakz.exam_service.dto.*;
 import io.github.bardiakz.exam_service.entity.Exam;
 import io.github.bardiakz.exam_service.entity.Question;
-import io.github.bardiakz.exam_service.event.ExamStartedEvent;
+import io.github.bardiakz.exam_service.event.ExamCreatedEvent;
 import io.github.bardiakz.exam_service.exception.ExamNotFoundException;
 import io.github.bardiakz.exam_service.exception.UnauthorizedException;
 import io.github.bardiakz.exam_service.repository.ExamRepository;
@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -75,18 +76,17 @@ public class ExamService {
         Exam saved = examRepository.save(exam);
 
         // Send notification via Circuit Breaker protected method
-        ExamStartedEvent event = new ExamStartedEvent(
-                "ExamStarted",
+        ExamCreatedEvent event = new ExamCreatedEvent(
+                "ExamCreated",
                 saved.getId(),
                 saved.getTitle(),
-                saved.getInstructorId(),
                 saved.getStartTime(),
                 saved.getDurationMinutes(),
-                saved.getTotalMarks(),
+                Collections.emptyList(),
                 LocalDateTime.now()
         );
 
-        notificationService.notifyExamStart(event);
+        notificationService.notifyExamCreated(event);
 
         log.info("Exam published successfully with ID: {}", saved.getId());
         return mapToExamResponse(saved);

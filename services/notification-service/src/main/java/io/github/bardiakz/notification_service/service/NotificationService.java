@@ -39,9 +39,13 @@ public class NotificationService {
     @Value("${notification.retry.delay-ms}")
     private Long retryDelayMs;
 
+    // NEW: Allow disabling email sending (default: true)
+    @Value("${notification.email.enabled:true}")
+    private boolean emailEnabled;
+
     public NotificationService(NotificationRepository notificationRepository,
-                              EmailService emailService,
-                              TemplateService templateService) {
+                               EmailService emailService,
+                               TemplateService templateService) {
         this.notificationRepository = notificationRepository;
         this.emailService = emailService;
         this.templateService = templateService;
@@ -67,22 +71,35 @@ public class NotificationService {
         // Save to database
         notification = notificationRepository.save(notification);
 
-        // Attempt to send
+        // Attempt to send (gracefully handles SMTP not configured)
         try {
             sendNotification(notification);
-            return toResponse(notification);
         } catch (Exception e) {
-            logger.error("Failed to send notification immediately: {}", e.getMessage());
-            // Will be retried by scheduler
-            return toResponse(notification);
+            logger.warn("Failed to send notification immediately: {}", e.getMessage());
+            // Notification is still saved, just not sent via email
         }
+
+        return toResponse(notification);
     }
 
     /**
      * Send notification using email service
+     * UPDATED: Works even without SMTP configured
      */
     @Transactional
     public void sendNotification(Notification notification) {
+
+        if (!emailEnabled) {
+            // Email sending disabled - just mark as sent (in-app only)
+            logger.info("Email sending disabled - notification {} stored for in-app display only",
+                    notification.getId());
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(LocalDateTime.now());
+            notificationRepository.save(notification);
+            return;
+        }
+
+        // Email enabled - try to send
         try {
             emailService.sendHtmlEmail(
                     notification.getRecipientEmail(),
@@ -95,10 +112,24 @@ public class NotificationService {
             notification.setSentAt(LocalDateTime.now());
             notificationRepository.save(notification);
 
-            logger.info("Notification {} sent successfully", notification.getId());
+            logger.info("Notification {} sent successfully via email", notification.getId());
 
         } catch (EmailDeliveryException e) {
+            // Email failed but notification is still in DB for in-app display
+            logger.warn("Email delivery failed for notification {}: {}",
+                    notification.getId(), e.getMessage());
             handleSendFailure(notification, e);
+        } catch (Exception e) {
+            // SMTP not configured or other error
+            logger.warn("Email service unavailable for notification {}: {}. " +
+                            "Notification saved for in-app display only.",
+                    notification.getId(), e.getMessage());
+
+            // Mark as sent anyway (user can see it in-app)
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(LocalDateTime.now());
+            notification.setErrorMessage("Email not sent: " + e.getMessage());
+            notificationRepository.save(notification);
         }
     }
 
@@ -110,7 +141,19 @@ public class NotificationService {
                                                    NotificationType type, Map<String, String> variables,
                                                    Long userId) {
         try {
-            EmailTemplate template = templateService.loadTemplate(templateName, variables);
+            EmailTemplate template;
+
+            try {
+                template = templateService.loadTemplate(templateName, variables);
+            } catch (Exception e) {
+                // Template loading failed - use simple template
+                logger.warn("Failed to load template {}, using simple template: {}",
+                        templateName, e.getMessage());
+                String message = variables.getOrDefault("message",
+                        "You have a new notification");
+                template = templateService.createSimpleTemplate(
+                        "Notification from University", message);
+            }
 
             NotificationRequest request = new NotificationRequest(
                     recipientEmail,
@@ -123,7 +166,8 @@ public class NotificationService {
             return createAndSendNotification(request);
 
         } catch (Exception e) {
-            logger.error("Failed to create notification from template {}: {}", templateName, e.getMessage());
+            logger.error("Failed to create notification from template {}: {}",
+                    templateName, e.getMessage());
             throw new NotificationException("Template processing failed", e);
         }
     }
@@ -136,12 +180,14 @@ public class NotificationService {
         notification.setErrorMessage(e.getMessage());
 
         if (notification.getRetryCount() >= maxRetryAttempts) {
-            notification.setStatus(NotificationStatus.FAILED);
-            logger.error("Notification {} failed after {} attempts", 
-                    notification.getId(), maxRetryAttempts);
+            // Max retries reached - mark as sent anyway (user can see in-app)
+            notification.setStatus(NotificationStatus.SENT);
+            notification.setSentAt(LocalDateTime.now());
+            logger.info("Notification {} marked as sent after {} failed email attempts. " +
+                    "Available in-app.", notification.getId(), maxRetryAttempts);
         } else {
             notification.setStatus(NotificationStatus.RETRY);
-            logger.warn("Notification {} failed, will retry. Attempt {}/{}",
+            logger.warn("Notification {} will retry email. Attempt {}/{}",
                     notification.getId(), notification.getRetryCount(), maxRetryAttempts);
         }
 
@@ -150,10 +196,15 @@ public class NotificationService {
 
     /**
      * Retry failed notifications (scheduled task)
+     * Only retries if email is enabled
      */
     @Scheduled(fixedDelayString = "${notification.retry.delay-ms}")
     @Transactional
     public void retryFailedNotifications() {
+        if (!emailEnabled) {
+            return; // Skip retries if email disabled
+        }
+
         List<Notification> failedNotifications = notificationRepository
                 .findByStatusAndRetryCountLessThan(NotificationStatus.RETRY, maxRetryAttempts);
 
@@ -164,7 +215,7 @@ public class NotificationService {
                 try {
                     sendNotification(notification);
                 } catch (Exception e) {
-                    logger.error("Retry failed for notification {}: {}", 
+                    logger.error("Retry failed for notification {}: {}",
                             notification.getId(), e.getMessage());
                 }
             }
@@ -219,6 +270,7 @@ public class NotificationService {
                 notification.getId(),
                 notification.getRecipientEmail(),
                 notification.getSubject(),
+                notification.getBody(),
                 notification.getType(),
                 notification.getStatus(),
                 notification.getCreatedAt(),

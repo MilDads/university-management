@@ -1,83 +1,104 @@
 package io.github.bardiakz.api_gateway.filter;
 
-import io.github.bardiakz.api_gateway.security.JwtService;
-import org.jetbrains.annotations.NotNull;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
+
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class JwtAuthenticationFilter extends AbstractGatewayFilterFactory<JwtAuthenticationFilter.Config> {
 
-    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
-    private final JwtService jwtService;
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
-    public JwtAuthenticationFilter(JwtService jwtService) {
+    private final SecretKey signingKey;
+
+    public JwtAuthenticationFilter(@Value("${jwt.secret}") String jwtSecret) {
         super(Config.class);
-        this.jwtService = jwtService;
+
+        if (jwtSecret == null || jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("JWT secret must be at least 256 bits");
+        }
+
+        this.signingKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        logger.info("JwtAuthenticationFilter initialized with secret (first 10 chars): {}...",
+                jwtSecret.substring(0, Math.min(10, jwtSecret.length())));
     }
 
-    @NotNull
     @Override
     public GatewayFilter apply(Config config) {
         return (exchange, chain) -> {
-            ServerHttpRequest request = exchange.getRequest();
+            String path = exchange.getRequest().getPath().toString();
+            String authHeader = exchange.getRequest().getHeaders().getFirst("Authorization");
 
-            // Extract Authorization header
-            String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+            logger.debug("Processing request to: {}", path);
 
             if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                log.warn("Missing or invalid Authorization header for path: {}", request.getPath());
-                return onError(exchange, "Missing or invalid Authorization header");
+                logger.warn("Missing or invalid Authorization header for path: {}", path);
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
             }
 
-            String token = authHeader.substring(7);
-
             try {
-                // Validate token
-                if (!jwtService.validateToken(token)) {
-                    log.warn("Invalid or expired JWT token");
-                    return onError(exchange, "Invalid or expired token");
-                }
+                String token = authHeader.substring(7);
 
-                // Extract user info and add to headers
-                String username = jwtService.extractUsername(token);
-                String role = jwtService.extractRole(token);
+                // Parse JWT using JJWT 0.13.0 API
+                Claims claims = Jwts.parser()
+                        .verifyWith(signingKey)  // Use verifyWith() in 0.13.0
+                        .build()
+                        .parseSignedClaims(token)  // Use parseSignedClaims() in 0.13.0
+                        .getPayload();  // Use getPayload() instead of getBody()
 
-                log.debug("Authenticated request for user: {} with role: {}", username, role);
+                // Extract user information from JWT
+                String username = claims.getSubject();
+                String email = claims.get("email", String.class);
+                String role = claims.get("role", String.class);
 
-                // Add user info to request headers for downstream services
+                logger.info("JWT validated for user: {} ({})", username, email);
+                logger.debug("Adding headers - X-User-Id: {}, X-User-Email: {}, X-User-Role: {}",
+                        username, email, role);
+
+                // Build modified request with user headers
                 ServerHttpRequest modifiedRequest = exchange.getRequest().mutate()
-                        .header("X-User-Id", username)
-                        .header("X-User-Role", role)
+                        .header("X-User-Id", username != null ? username : "")
+                        .header("X-User-Email", email != null ? email : "")
+                        .header("X-User-Role", role != null ? role : "")
                         .build();
 
-                return chain.filter(exchange.mutate().request(modifiedRequest).build());
+                // Create modified exchange
+                ServerWebExchange modifiedExchange = exchange.mutate()
+                        .request(modifiedRequest)
+                        .build();
+
+                // Log all headers being forwarded (for debugging)
+                if (logger.isDebugEnabled()) {
+                    modifiedRequest.getHeaders().forEach((key, value) ->
+                            logger.debug("Forwarding header: {} = {}", key,
+                                    key.equalsIgnoreCase("Authorization") ? "[REDACTED]" : value)
+                    );
+                }
+
+                return chain.filter(modifiedExchange);
 
             } catch (Exception e) {
-                log.error("JWT validation error: {}", e.getMessage());
-                return onError(exchange, "Token validation failed");
+                logger.error("JWT validation failed for path {}: {}", path, e.getMessage());
+                exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                return exchange.getResponse().setComplete();
             }
         };
     }
 
-    private Mono<Void> onError(ServerWebExchange exchange,
-                               String message) {
-        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-        exchange.getResponse().getHeaders().add("Content-Type", "application/json");
-        String body = String.format("{\"error\": \"%s\"}", message);
-        var buffer = exchange.getResponse().bufferFactory().wrap(body.getBytes());
-        return exchange.getResponse().writeWith(Mono.just(buffer));
-    }
-
     public static class Config {
-        // Configuration properties if needed in the future
+        // Configuration properties if needed
     }
 }

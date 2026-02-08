@@ -1616,3 +1616,81 @@ Whether this is for an app, website, or internal system
 
 
 I can give you exact config examples.
+The User-Service
+---
+
+**Question:**
+How does the separation of authentication logic (auth-service) from profile management (user-service) align with Domain-Driven Design's Bounded Context principle, and what are the main trade-offs when compared to a monolithic user module?
+
+**Answer:**
+The separation of authentication logic (handled by the auth-service) from profile management (handled by the user-service) is a deliberate architectural choice that aligns well with Domain-Driven Design's (DDD) Bounded Context principle, while also reflecting the broader goals of microservices architecture in your project. Below is a structured, academic-style analysis of this alignment and the main trade-offs compared to a monolithic user module.
+In Domain-Driven Design (Evans, 2003), a Bounded Context is an explicit boundary within which a particular domain model is defined and consistent. It ensures that a concept (e.g., "User") has a single, unambiguous meaning inside that boundary and avoids the "big ball of mud" that arises when the same term carries multiple conflicting meanings across the system.
+In your design:
+
+auth-service owns the identity and authentication bounded context.
+Here, "User" primarily means an identity subject with credentials (username/email, password hash), roles for authentication/authorization, and security-related lifecycle events (registration, login, token issuance). The model is minimal and focused on security invariants (e.g., password strength, unique username/email, JWT claims).
+user-service owns the profile and academic identity bounded context.
+Here, "User" (or more precisely "UserProfile") represents an academic entity with university-specific attributes (fullName, studentNumber, tenantId/faculty, phoneNumber, etc.) and business rules (e.g., profile completeness validation, multi-tenancy isolation). The model is richer and focused on academic invariants.
+
+This separation satisfies the core heuristic of Bounded Context: different parts of the domain speak different languages about the same concept. The auth-service and user-service use the term "User" with different meanings and different invariants — exactly what DDD recommends to avoid ambiguity and accidental coupling.
+Furthermore, the design respects Context Mapping patterns (Evans, 2003; Vernon, 2013):
+
+The frontend acts as an Anti-Corruption Layer (ACL) by orchestrating the two contexts.
+The eventual goal (as discussed earlier) of using events (UserRegistered → create profile) would introduce an Open Host Service / Published Language relationship or even a Conformist relationship, further clarifying the mapping between contexts.
+The current separated design is strongly aligned with DDD's Bounded Context principle: it gives each subdomain (authentication vs academic profile) its own consistent language and invariants, reducing ambiguity and cognitive load. This choice is particularly appropriate for a university platform where identity (security, login) and academic identity (student records, faculty affiliation, multi-tenancy) are naturally distinct subdomains with different change rates, access patterns, and stakeholders.
+Compared to a monolithic user module, the separated approach trades short-term simplicity and strong consistency for long-term scalability, fault isolation, independent evolvability, and better domain modeling — all of which are explicitly required or strongly implied by your project’s non-negotiable architectural constraints (loosely coupled microservices, Saga, Circuit Breaker, event-driven communication).
+
+**Question:**
+In a distributed registration flow spanning two services, how can full traceability be ensured (e.g., linking the auth registration to the profile creation)?
+
+**Answer:**
+In a distributed registration flow spanning two services (auth-service for identity creation and user-service for profile management), ensuring full traceability — i.e., reliably linking the authentication event to the subsequent profile creation — is essential for observability, debugging, auditability, and compliance with non-functional requirements such as maintainability (NFR-MN01) and security (NFR-SE01). Below is a comprehensive, academically grounded discussion of how to achieve this in the context of your microservices-based university management platform.
+Core Challenge in Distributed Flows
+In microservices, a single business action (user registration) is decomposed into multiple service interactions. Without explicit correlation, it becomes difficult or impossible to:
+
+Trace the end-to-end flow (which registration request led to which profile?)
+Correlate logs/metrics across services
+Reconstruct causal relationships during incidents
+Provide audit trails (e.g., "student X registered at time T via auth-service and profile was created in user-service at T+Δt")
+
+This is a classic problem of distributed tracing in loosely coupled systems.
+Recommended Approaches for Traceability
+To link auth registration to profile creation, the following techniques should be applied (in order of priority and maturity):
+
+Correlation IDs / Trace IDs (Primary & Mandatory Mechanism)
+The most widely adopted and lightweight solution is to propagate a unique correlation ID (also called trace ID or request ID) across all services involved in the flow.How it works in practice:
+The frontend (Flutter) generates a UUID correlation ID when initiating registration.
+This ID is sent in a custom HTTP header (e.g., X-Correlation-ID or X-Request-ID) to the API Gateway.
+The API Gateway propagates the header to both auth-service and user-service.
+Both services log the correlation ID in every log entry (using SLF4J/Logback pattern: %X{correlationId}).
+When auth-service successfully registers the user, it returns the correlation ID in the response headers.
+The frontend includes the same ID in the subsequent profile creation request to user-service.
+Benefits:
+Zero additional infrastructure
+Works with synchronous calls (your current flow)
+Enables grep/search across logs in ELK, Loki, or CloudWatch
+Academic reference: This is the foundation of distributed tracing as described in the OpenTelemetry specification and in papers on microservices observability (e.g., Sigelman et al., 2010 – Dapper, Google's tracing system).
+Distributed Tracing with OpenTelemetry / Spring Cloud Sleuth + Zipkin/Jaeger
+For full end-to-end visibility (not just logs, but spans, timings, error propagation):
+Integrate OpenTelemetry (or legacy Spring Cloud Sleuth) in both services.
+The API Gateway (or frontend) creates the root span and propagates traceparent/tracecontext headers (W3C Trace Context standard).
+Auth-service and user-service automatically create child spans for each operation.
+Spans are exported to a backend (Zipkin, Jaeger, or Tempo) via OTLP or HTTP.
+In Jaeger UI, you can search by correlation ID or trace ID and see the full trace:
+Frontend → Gateway → auth-service/register → Gateway → user-service/create-profile
+Benefits:
+Visual dependency graph
+Latency breakdown per service
+Automatic error propagation and root-cause analysis
+Alignment with project: Strongly supports maintainability (NFR-MN01) and helps debug cascading failures (Circuit Breaker requirement).
+Event Sourcing / Event-Carried State Transfer (for eventual transition to event-driven)
+When you migrate to an event-driven registration flow (UserRegistered event from auth-service triggers profile creation in user-service):
+The UserRegistered event should carry a correlation ID (generated at the frontend or in auth-service).
+Both the published event and the consumed event are logged with the same ID.
+The event itself becomes the single source of truth linking the two actions.
+Benefits:
+Naturally idempotent and traceable
+Supports audit trails (event log = history)
+Aligns with Saga/Choreography requirement
+
+---

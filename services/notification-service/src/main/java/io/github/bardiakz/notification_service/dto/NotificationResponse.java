@@ -9,6 +9,7 @@ public class NotificationResponse {
     private Long id;
     private String recipientEmail;
     private String subject;
+    private String body;
     private NotificationType type;
     private NotificationStatus status;
     private LocalDateTime createdAt;
@@ -18,12 +19,14 @@ public class NotificationResponse {
     public NotificationResponse() {
     }
 
-    public NotificationResponse(Long id, String recipientEmail, String subject, 
-                               NotificationType type, NotificationStatus status,
-                               LocalDateTime createdAt, LocalDateTime sentAt, Integer retryCount) {
+    public NotificationResponse(Long id, String recipientEmail, String subject,
+                                String body,  // ADD THIS PARAMETER
+                                NotificationType type, NotificationStatus status,
+                                LocalDateTime createdAt, LocalDateTime sentAt, Integer retryCount) {
         this.id = id;
         this.recipientEmail = recipientEmail;
         this.subject = subject;
+        this.body = body;  // ADD THIS
         this.type = type;
         this.status = status;
         this.createdAt = createdAt;
@@ -31,6 +34,16 @@ public class NotificationResponse {
         this.retryCount = retryCount;
     }
 
+    // ADD GETTER AND SETTER
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
+
+    // ... keep all other getters/setters
     public Long getId() {
         return id;
     }

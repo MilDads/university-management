@@ -11,8 +11,9 @@ final notificationServiceProvider = Provider<NotificationService>((ref) {
 });
 
 // ==================== My Notifications Provider ====================
-final myNotificationsProvider =
-    FutureProvider.autoDispose<List<Notification>>((ref) async {
+final myNotificationsProvider = FutureProvider.autoDispose<List<Notification>>((
+  ref,
+) async {
   final notificationService = ref.read(notificationServiceProvider);
   return notificationService.getMyNotifications();
 });
@@ -20,20 +21,22 @@ final myNotificationsProvider =
 // ==================== Notifications by Email Provider ====================
 final notificationsByEmailProvider = FutureProvider.autoDispose
     .family<List<Notification>, String>((ref, email) async {
-  final notificationService = ref.read(notificationServiceProvider);
-  return notificationService.getNotificationsByEmail(email);
-});
+      final notificationService = ref.read(notificationServiceProvider);
+      return notificationService.getNotificationsByEmail(email);
+    });
 
 // ==================== Notification Statistics Provider ====================
-final notificationStatsProvider =
-    FutureProvider.autoDispose<Map<String, int>>((ref) async {
+final notificationStatsProvider = FutureProvider.autoDispose<Map<String, int>>((
+  ref,
+) async {
   final notificationService = ref.read(notificationServiceProvider);
   return notificationService.getNotificationStats();
 });
 
 // ==================== Unread Notifications Count Provider ====================
-final unreadNotificationsCountProvider =
-    FutureProvider.autoDispose<int>((ref) async {
+final unreadNotificationsCountProvider = FutureProvider.autoDispose<int>((
+  ref,
+) async {
   final notifications = await ref.watch(myNotificationsProvider.future);
   // For now, we'll consider PENDING notifications as "unread"
   // You can add a 'read' field to the backend model for better tracking
@@ -43,9 +46,9 @@ final unreadNotificationsCountProvider =
 // ==================== Recent Notifications Provider (Last 10) ====================
 final recentNotificationsProvider =
     FutureProvider.autoDispose<List<Notification>>((ref) async {
-  final notifications = await ref.watch(myNotificationsProvider.future);
-  // Sort by creation date (most recent first) and take top 10
-  final sorted = notifications.toList()
-    ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-  return sorted.take(10).toList();
-});
+      final notifications = await ref.watch(myNotificationsProvider.future);
+      // Sort by creation date (most recent first) and take top 10
+      final sorted = notifications.toList()
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return sorted.take(10).toList();
+    });

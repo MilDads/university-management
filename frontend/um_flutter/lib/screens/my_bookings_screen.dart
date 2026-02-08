@@ -112,66 +112,64 @@ class _BookingCard extends ConsumerWidget {
             const SizedBox(height: 12),
             // Resource Details
             resourceAsync.when(
-              data:
-                  (resource) => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              data: (resource) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    resource.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
                     children: [
+                      const Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 4),
                       Text(
-                        resource.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
+                        resource.location,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 14,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            resource.location,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.category, size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(
-                            resource.type,
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                      const Icon(Icons.category, size: 14, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        resource.type,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
-              loading:
-                  () => const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8.0),
-                    child: LinearProgressIndicator(),
-                  ),
-              error:
-                  (e, _) => Text(
-                    'Resource ID: ${booking.resourceId} (Details unavailable)',
-                    style: const TextStyle(fontStyle: FontStyle.italic),
-                  ),
+                ],
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.0),
+                child: LinearProgressIndicator(),
+              ),
+              error: (e, _) => Text(
+                'Resource ID: ${booking.resourceId} (Details unavailable)',
+                style: const TextStyle(fontStyle: FontStyle.italic),
+              ),
             ),
             const SizedBox(height: 12),
             const Text(
               "Purpose:",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.grey),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.grey,
+              ),
             ),
-            Text(
-              booking.purpose,
-              style: const TextStyle(fontSize: 14),
-            ),
+            Text(booking.purpose, style: const TextStyle(fontSize: 14)),
             const SizedBox(height: 8),
             Row(
               children: [
