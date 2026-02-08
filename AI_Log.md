@@ -1657,83 +1657,96 @@ What SMTP provider you’re using (Gmail, Microsoft, Postfix, SES, etc.)
 
 Whether this is for an app, website, or internal system
 
-
 I can give you exact config examples.
+
+
 The User-Service
 ---
 
 **Question:**
-How does the separation of authentication logic (auth-service) from profile management (user-service) align with Domain-Driven Design's Bounded Context principle, and what are the main trade-offs when compared to a monolithic user module?
+The current design has no caching on profile reads. If frequent profile lookups are expected (e.g., for dashboard), where and how would you add caching (e.g., Spring Cache + Redis)? Discuss eviction strategy, cache key design, and invalidation triggers.
 
 **Answer:**
-The separation of authentication logic (handled by the auth-service) from profile management (handled by the user-service) is a deliberate architectural choice that aligns well with Domain-Driven Design's (DDD) Bounded Context principle, while also reflecting the broader goals of microservices architecture in your project. Below is a structured, academic-style analysis of this alignment and the main trade-offs compared to a monolithic user module.
-In Domain-Driven Design (Evans, 2003), a Bounded Context is an explicit boundary within which a particular domain model is defined and consistent. It ensures that a concept (e.g., "User") has a single, unambiguous meaning inside that boundary and avoids the "big ball of mud" that arises when the same term carries multiple conflicting meanings across the system.
-In your design:
 
-auth-service owns the identity and authentication bounded context.
-Here, "User" primarily means an identity subject with credentials (username/email, password hash), roles for authentication/authorization, and security-related lifecycle events (registration, login, token issuance). The model is minimal and focused on security invariants (e.g., password strength, unique username/email, JWT claims).
-user-service owns the profile and academic identity bounded context.
-Here, "User" (or more precisely "UserProfile") represents an academic entity with university-specific attributes (fullName, studentNumber, tenantId/faculty, phoneNumber, etc.) and business rules (e.g., profile completeness validation, multi-tenancy isolation). The model is richer and focused on academic invariants.
-
-This separation satisfies the core heuristic of Bounded Context: different parts of the domain speak different languages about the same concept. The auth-service and user-service use the term "User" with different meanings and different invariants — exactly what DDD recommends to avoid ambiguity and accidental coupling.
-Furthermore, the design respects Context Mapping patterns (Evans, 2003; Vernon, 2013):
-
-The frontend acts as an Anti-Corruption Layer (ACL) by orchestrating the two contexts.
-The eventual goal (as discussed earlier) of using events (UserRegistered → create profile) would introduce an Open Host Service / Published Language relationship or even a Conformist relationship, further clarifying the mapping between contexts.
-The current separated design is strongly aligned with DDD's Bounded Context principle: it gives each subdomain (authentication vs academic profile) its own consistent language and invariants, reducing ambiguity and cognitive load. This choice is particularly appropriate for a university platform where identity (security, login) and academic identity (student records, faculty affiliation, multi-tenancy) are naturally distinct subdomains with different change rates, access patterns, and stakeholders.
-Compared to a monolithic user module, the separated approach trades short-term simplicity and strong consistency for long-term scalability, fault isolation, independent evolvability, and better domain modeling — all of which are explicitly required or strongly implied by your project’s non-negotiable architectural constraints (loosely coupled microservices, Saga, Circuit Breaker, event-driven communication).
+In the current implementation of the User Service, profile reads (such as fetching a user's full name, student number, or other profile details for dashboards or other views) always hit the database directly. This is acceptable for low-traffic scenarios but becomes inefficient when profile lookups are frequent, as is expected in a university platform (e.g., student dashboard on login, professor viewing class lists, administrative panels loading user details, or mobile app refreshing profile data).
+To address this performance concern while respecting the non-functional requirement of low latency (<400 ms for 95% of API calls), caching should be introduced specifically for read operations. The recommended approach is to use the Spring Cache Abstraction combined with Redis as the backing cache store. This is a standard, mature, and production-ready pattern in Spring Boot microservices and aligns perfectly with the project's existing technology stack (Spring Boot, Redis already present in docker-compose for other services).
+Where to Place Caching
+Caching must be applied at the service layer, not in the controller or repository. Placing it in the controller bypasses business logic and validation. Placing it directly in the repository (e.g., via second-level cache) is more complex, less flexible, and harder to control invalidation.
+The ideal location is a read method in the UserProfileService, such as a future getProfileByEmail or getMyProfile method. This keeps caching close to the business logic while still benefiting from repository-level data access.
+How to Implement Caching
+First, add the necessary dependencies to the service's build file (Gradle in this case). Include the Spring Cache starter and the Redis starter. Enable caching globally by adding the appropriate annotation to the main application class.
+Next, configure Redis as the cache provider. This is typically done through application properties or a dedicated configuration class, specifying the Redis host (the service name in docker-compose), port, and optional connection settings. Define a default cache configuration, such as serialization strategy (JSON for objects) and null-value handling (to avoid caching null results).
+Then, apply caching annotations directly to service methods that perform expensive reads. Use the @Cacheable annotation on the read method, specifying a cache name (a logical group, e.g., "userProfiles") and a key expression (usually based on the method parameter, such as the email).
+Cache Key Design
+The cache key must be unique per profile and fast to compute. The most natural and efficient key is the email address (since it is already the uniqueness constraint in the entity). This results in simple, human-readable keys like "userProfiles::student@example.com".
+If multiple parameters are needed in the future (e.g., combining email and tenantId for stricter isolation), use a composite key expression. For even more complex cases, a custom key generator can be implemented, but it is rarely needed here.
+Eviction Strategy
+The cache should not live forever. A reasonable time-to-live (TTL) is 30 minutes to 1 hour for profile data, as profiles do not change very frequently (e.g., name or student number updates are rare compared to reads). This TTL can be set globally for all caches or overridden per cache name.
+For more aggressive eviction, a least-recently-used (LRU) policy can be configured in Redis, but TTL is usually sufficient and simpler.
+Invalidation Triggers
+The most critical part of caching is keeping the cache consistent with the database. Whenever a profile is created, updated, or deleted, the corresponding cache entry must be invalidated immediately.
+This is achieved using the @CacheEvict annotation on create, update, and delete methods in the service layer. The key expression must match the one used in @Cacheable (e.g., based on email). For create operations, evict using the email from the request DTO. For update operations, evict using the email from the updated entity or request.
+In rare cases where bulk operations are added, a global eviction (allEntries = true) can be used, but it should be avoided as it reduces cache hit rate unnecessarily.
+Monitoring and Testing
+To ensure the cache behaves correctly, expose cache metrics via Spring Boot Actuator (already included in most starters). Add endpoints for health and metrics, and monitor cache hit rate, miss rate, and eviction count in production.
+For testing, write integration tests that verify cache hits (same input returns from cache without database query) and evictions (update invalidates cache, next read hits database again).
+Summary of Benefits and Considerations
+Adding caching at the service layer with Spring Cache + Redis significantly reduces database load for read-heavy operations, improves response times (often <50 ms for cache hits), and enhances scalability without changing the core business logic. The design is simple to implement, easy to monitor, and safe when invalidation is correctly tied to write operations.
+This enhancement directly supports the project's performance non-functional requirement and prepares the service for higher load scenarios (e.g., enrollment periods or campus-wide dashboard usage). It is a low-risk, high-reward improvement that can be added incrementally after basic functionality is stable.
 
 **Question:**
-In a distributed registration flow spanning two services, how can full traceability be ensured (e.g., linking the auth registration to the profile creation)?
+Why is the User entity kept in user-service despite most authentication logic being in auth-service? What technical criteria would make you decide to remove it entirely from user-service?
 
 **Answer:**
-In a distributed registration flow spanning two services (auth-service for identity creation and user-service for profile management), ensuring full traceability — i.e., reliably linking the authentication event to the subsequent profile creation — is essential for observability, debugging, auditability, and compliance with non-functional requirements such as maintainability (NFR-MN01) and security (NFR-SE01). Below is a comprehensive, academically grounded discussion of how to achieve this in the context of your microservices-based university management platform.
-Core Challenge in Distributed Flows
-In microservices, a single business action (user registration) is decomposed into multiple service interactions. Without explicit correlation, it becomes difficult or impossible to:
+In the current architecture of the university management platform, the User entity is retained in the user-service even though the majority of authentication-related logic (credential storage, password hashing, login, token issuance, and basic identity validation) resides in the auth-service. This design decision reflects a pragmatic compromise between domain purity, operational simplicity, and short-term implementation constraints, but it is not the ideal long-term state. Below is a detailed technical analysis of why the entity is kept and the specific criteria that would justify removing it entirely.
+Reasons the User Entity Is Kept in User-Service (Current Rationale)
 
-Trace the end-to-end flow (which registration request led to which profile?)
-Correlate logs/metrics across services
-Reconstruct causal relationships during incidents
-Provide audit trails (e.g., "student X registered at time T via auth-service and profile was created in user-service at T+Δt")
+Spring Security Integration Dependency
+The User class implements Spring Security's UserDetails interface, which requires methods such as getAuthorities(), getUsername(), getPassword(), and the account status flags (isEnabled(), etc.). These methods are used directly by Spring Security's authentication providers (e.g., DaoAuthenticationProvider or custom UserDetailsService) to load and validate users during login and token generation.
+If the User entity were removed from user-service, either:
+user-service would need to depend on a shared UserDetails implementation from auth-service (introducing tight coupling via a shared library), or
+user-service would have to duplicate or proxy the UserDetails logic, violating DRY and increasing maintenance cost.
+Keeping the entity avoids this duplication and allows user-service to participate in authentication flows (e.g., role-based authorization checks after login) without external dependencies.
 
-This is a classic problem of distributed tracing in loosely coupled systems.
-Recommended Approaches for Traceability
-To link auth registration to profile creation, the following techniques should be applied (in order of priority and maturity):
+Role and Tenant Information Needed Locally
+The User entity includes the role field (enum-mapped) and tenantId. These fields are used in user-service for:
+Role-based filtering of profile data or actions (e.g., students cannot modify professor profiles).
+Multi-tenancy enforcement (e.g., query scoping by tenantId to prevent cross-faculty data leakage).
+Fetching these fields from auth-service on every request would introduce latency and a synchronous dependency, violating the loose-coupling requirement. Storing them locally in user-service allows fast, local decisions.
 
-Correlation IDs / Trace IDs (Primary & Mandatory Mechanism)
-The most widely adopted and lightweight solution is to propagate a unique correlation ID (also called trace ID or request ID) across all services involved in the flow.How it works in practice:
-The frontend (Flutter) generates a UUID correlation ID when initiating registration.
-This ID is sent in a custom HTTP header (e.g., X-Correlation-ID or X-Request-ID) to the API Gateway.
-The API Gateway propagates the header to both auth-service and user-service.
-Both services log the correlation ID in every log entry (using SLF4J/Logback pattern: %X{correlationId}).
-When auth-service successfully registers the user, it returns the correlation ID in the response headers.
-The frontend includes the same ID in the subsequent profile creation request to user-service.
-Benefits:
-Zero additional infrastructure
-Works with synchronous calls (your current flow)
-Enables grep/search across logs in ELK, Loki, or CloudWatch
-Academic reference: This is the foundation of distributed tracing as described in the OpenTelemetry specification and in papers on microservices observability (e.g., Sigelman et al., 2010 – Dapper, Google's tracing system).
-Distributed Tracing with OpenTelemetry / Spring Cloud Sleuth + Zipkin/Jaeger
-For full end-to-end visibility (not just logs, but spans, timings, error propagation):
-Integrate OpenTelemetry (or legacy Spring Cloud Sleuth) in both services.
-The API Gateway (or frontend) creates the root span and propagates traceparent/tracecontext headers (W3C Trace Context standard).
-Auth-service and user-service automatically create child spans for each operation.
-Spans are exported to a backend (Zipkin, Jaeger, or Tempo) via OTLP or HTTP.
-In Jaeger UI, you can search by correlation ID or trace ID and see the full trace:
-Frontend → Gateway → auth-service/register → Gateway → user-service/create-profile
-Benefits:
-Visual dependency graph
-Latency breakdown per service
-Automatic error propagation and root-cause analysis
-Alignment with project: Strongly supports maintainability (NFR-MN01) and helps debug cascading failures (Circuit Breaker requirement).
-Event Sourcing / Event-Carried State Transfer (for eventual transition to event-driven)
-When you migrate to an event-driven registration flow (UserRegistered event from auth-service triggers profile creation in user-service):
-The UserRegistered event should carry a correlation ID (generated at the frontend or in auth-service).
-Both the published event and the consumed event are logged with the same ID.
-The event itself becomes the single source of truth linking the two actions.
-Benefits:
-Naturally idempotent and traceable
-Supports audit trails (event log = history)
-Aligns with Saga/Choreography requirement
+Short-Term Development and Testing Simplicity
+During early prototyping and local development, having the User entity in user-service simplifies testing (e.g., creating test users with roles directly in user-service tests, running integration tests without spinning up auth-service). It also reduces the need for complex inter-service mocking or contract testing in the initial phases.
+Avoiding Premature Shared Library
+Creating a shared library (e.g., common-domain module with User and Role) would introduce a new dependency between services. While this is the clean long-term solution, it adds build complexity, version management, and deployment coordination — overhead that is unnecessary for a student project prototype.
+
+Technical Criteria That Would Justify Removing User Entity from User-Service Entirely
+The User entity should be removed from user-service when one or more of the following technical conditions are met:
+
+Authentication Is Fully Isolated and Never Reused in User-Service
+If user-service no longer needs to perform any authentication or authorization logic that requires direct access to credentials, roles, or account status, the entity becomes redundant.
+Criterion: All role-based decisions in user-service are made solely based on JWT claims (passed via Gateway) rather than local User lookup.
+Roles and TenantId Are Reliably Available via JWT Claims
+If the JWT issued by auth-service consistently includes the full set of required claims (role, tenantId, etc.) and the token is validated and parsed at the Gateway level (or in a shared filter), user-service can extract these values from the security context without needing a local User entity.
+Criterion: The Gateway enforces role-based routing or header enrichment, making local role storage unnecessary.
+Introduction of a Shared Domain Library
+When the project matures and a common-domain module is created (containing Role enum, UserId value object, etc.), user-service can depend on this library instead of owning the User entity.
+Criterion: Shared types (Role, TenantId) are extracted to a separate Maven/Gradle module published to a repository or included as a multi-module project dependency.
+Migration to Event-Driven Synchronization
+Once registration becomes event-driven (auth-service publishes UserRegistered or UserUpdated events containing role and tenantId), user-service can store only the profile-specific data and fetch role/tenant information on-demand from events or a read-only cache.
+Criterion: Event schema includes all necessary identity attributes, and user-service consumes events to keep a local projection (CQRS-style).
+Performance and Consistency Requirements Outweigh Local Storage
+If profiling shows that local role/tenant lookups cause consistency problems (e.g., role changes in auth-service are not reflected in user-service), or if the overhead of maintaining duplicated data becomes significant, removal becomes preferable.
+Criterion: Monitoring shows high write contention on duplicated fields or unacceptable staleness.
+
+Recommended Long-Term Direction
+The ideal end-state is to remove the User entity from user-service entirely once the following are in place:
+
+JWT includes role and tenantId claims (or they are enriched by Gateway).
+Role-based authorization is enforced at Gateway or via a shared security filter.
+Profile creation is triggered by events (Saga or choreography).
+Shared domain types (Role enum, value objects) are moved to a common library.
+
+Until then, retaining User in user-service is a pragmatic compromise that enables local development, simplifies testing, and avoids premature abstraction. It is not a design flaw — it is an evolutionary step.
+In summary, the entity is kept today to support immediate authentication integration and local decision-making. It should be removed when identity data is fully externalized via tokens/events and shared types, shifting user-service toward a pure profile-management responsibility. This evolution would further improve loose coupling, reduce duplication, and align more closely with microservices best practices.
 
 ---
