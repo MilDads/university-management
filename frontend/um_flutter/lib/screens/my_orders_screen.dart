@@ -26,7 +26,9 @@ class MyOrdersScreen extends ConsumerWidget {
                 child: ExpansionTile(
                   leading: const Icon(Icons.shopping_bag),
                   title: Text('Order #${order.id}'),
-                  subtitle: Text('Status: ${order.status} - Total: \$${order.totalAmount.toStringAsFixed(2)}'),
+                  subtitle: Text(
+                    'Status: ${order.status} - Total: \$${order.totalAmount.toStringAsFixed(2)}',
+                  ),
                   children: [
                     ListView.builder(
                       shrinkWrap: true,
@@ -36,8 +38,12 @@ class MyOrdersScreen extends ConsumerWidget {
                         final item = order.items[itemIndex];
                         return ListTile(
                           title: Text(item.productName),
-                          subtitle: Text('Qty: ${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}'),
-                          trailing: Text('\$${item.totalPrice.toStringAsFixed(2)}'),
+                          subtitle: Text(
+                            'Qty: ${item.quantity} x \$${item.unitPrice.toStringAsFixed(2)}',
+                          ),
+                          trailing: Text(
+                            '\$${item.totalPrice.toStringAsFixed(2)}',
+                          ),
                         );
                       },
                     ),
@@ -46,12 +52,20 @@ class MyOrdersScreen extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Date: ${order.createdAt.toLocal().toString().split(' ')[0]}'),
+                          Text(
+                            'Date: ${order.createdAt.toLocal().toString().split(' ')[0]}',
+                          ),
                           if (order.paymentId != null)
-                             Text('Payment ID: ${order.paymentId}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                            Text(
+                              'Payment ID: ${order.paymentId}',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
+                            ),
                         ],
                       ),
-                    )
+                    ),
                   ],
                 ),
               );

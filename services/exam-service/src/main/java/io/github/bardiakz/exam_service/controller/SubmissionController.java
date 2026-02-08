@@ -29,12 +29,17 @@ public class SubmissionController {
     @PreAuthorize("hasRole('STUDENT')")
     public ResponseEntity<SubmissionResponse> submitExam(
             @Valid @RequestBody SubmissionRequest request,
-            Authentication authentication) {
+            Authentication authentication,
+            @RequestHeader(value = "X-User-Email", required = false) String userEmail) {
 
         String studentId = authentication.getName();
-        log.info("Student {} submitting exam {}", studentId, request.getExamId());
+        if (userEmail == null || userEmail.isEmpty()) {
+            userEmail = studentId + "@university.edu";
+        }
+        
+        log.info("Student {} ({}) submitting exam {}", studentId, userEmail, request.getExamId());
 
-        SubmissionResponse response = submissionService.submitExam(request, studentId);
+        SubmissionResponse response = submissionService.submitExam(request, studentId, userEmail);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

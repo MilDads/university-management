@@ -11,8 +11,7 @@ class NotificationService {
   Map<String, String> _getHeaders() {
     final headers = {
       'Content-Type': 'application/json',
-      // Internal API secret - should match backend configuration
-      'X-Internal-Secret': 'your-secret-key-here', // TODO: Move to environment config
+      'X-Internal-Secret': 'your-secret-key-here',
     };
     if (_token != null) {
       headers['Authorization'] = 'Bearer $_token';
@@ -23,23 +22,51 @@ class NotificationService {
   /// Get all notifications for the current user
   Future<List<Notification>> getMyNotifications() async {
     try {
-      // This endpoint will be added to API Gateway to forward to notification service
+      final uri = Uri.parse('${ApiService.baseUrl}/api/notifications/me');
+      final headers = _getHeaders();
+
+      print('=== Fetching Notifications ===');
+      print('URL: $uri');
+      print('Token present: ${_token != null}');
+      print('Headers: ${headers.keys.toList()}');
+
       final response = await http
-          .get(
-            Uri.parse('${ApiService.baseUrl}/api/notifications/me'),
-            headers: _getHeaders(),
-          )
+          .get(uri, headers: headers)
           .timeout(const Duration(seconds: 10));
+
+      print('Response status: ${response.statusCode}');
+      print('Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Notification.fromJson(json)).toList();
+        print('Parsed ${data.length} notifications');
+
+        final notifications = data.map((json) {
+          try {
+            return Notification.fromJson(json as Map<String, dynamic>);
+          } catch (e) {
+            print('Error parsing notification: $e');
+            print('Problematic JSON: $json');
+            rethrow;
+          }
+        }).toList();
+
+        print(
+          'Successfully created ${notifications.length} notification objects',
+        );
+        return notifications;
       } else if (response.statusCode == 401) {
         throw AuthException('Unauthorized - please login again');
+      } else if (response.statusCode == 400) {
+        throw ServerException('Bad request - ${response.body}');
       } else {
-        throw ServerException('Failed to load notifications');
+        throw ServerException(
+          'Failed to load notifications (${response.statusCode}): ${response.body}',
+        );
       }
     } catch (e) {
+      print('Exception in getMyNotifications: $e');
+      print('Stack trace: ${StackTrace.current}');
       if (e is AuthException || e is ServerException) rethrow;
       throw NetworkException('Error loading notifications: ${e.toString()}');
     }
@@ -124,9 +151,7 @@ class NotificationService {
         throw ServerException('Admin access required');
       } else {
         final error = jsonDecode(response.body);
-        throw ServerException(
-          error['error'] ?? 'Failed to send notification',
-        );
+        throw ServerException(error['error'] ?? 'Failed to send notification');
       }
     } catch (e) {
       if (e is AuthException || e is ServerException) rethrow;
